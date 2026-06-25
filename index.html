@@ -553,7 +553,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.0.6 (2026-06-25)';
+const APP_VERSION = 'v1.0.7 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1010,6 +1010,14 @@ function renderCheck(){
   document.getElementById('chk-body').innerHTML = html;
 }
 
+/* Sを丸ごと差し替えた後の再描画用。
+   先に古いtextareaを除去し、flushComments()による上書き（コメント消失）を防ぐ */
+function renderCheckClean(){
+  const body = document.getElementById('chk-body');
+  if(body) body.innerHTML = '';
+  renderCheck();
+}
+
 function setC(no,v){
   if(!S[no]) S[no]={};
   S[no].c = v;
@@ -1318,6 +1326,34 @@ function triggerPhoto(no){
   inp.click();
 }
 
+/* 写真を縮小＋JPEG圧縮して容量を大幅削減（1枚数MB→数百KB） */
+function compressImage(file, maxDim=1280, quality=0.7){
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const dataUrl = reader.result;
+      const img = new Image();
+      img.onload = ()=>{
+        try{
+          let w = img.naturalWidth||img.width, h = img.naturalHeight||img.height;
+          if(!w||!h){ return resolve(dataUrl); }
+          const scale = Math.min(1, maxDim/Math.max(w,h));
+          w = Math.round(w*scale); h = Math.round(h*scale);
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          const out = c.toDataURL('image/jpeg', quality);
+          resolve(out && out.length < dataUrl.length ? out : dataUrl);
+        }catch(e){ resolve(dataUrl); }
+      };
+      img.onerror = ()=>resolve(dataUrl);
+      img.src = dataUrl;
+    };
+    reader.onerror = ()=>resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 function onPhotoSelected(e){
   if(!photoTarget) return;
   const files = [...e.target.files];
@@ -1336,10 +1372,10 @@ function onPhotoSelected(e){
     }
   };
   files.forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = ev=>{ S[no].photos.push(ev.target.result); added++; done(); };
-    reader.onerror = ()=>{ done(); };
-    reader.readAsDataURL(file);
+    compressImage(file).then(dataUrl=>{
+      if(dataUrl){ S[no].photos.push(dataUrl); added++; }
+      done();
+    });
   });
 }
 
@@ -1420,9 +1456,46 @@ function toast(icon,msg){
 }
 
 // ══ SAVE / LOAD / AUTOSAVE ══
-const LS_KEY = 'pcb_audit_v1';
+const LS_KEY = 'pcb_audit_v1';                 // 旧localStorage保存先（移行用）
+const IDB_NAME='pcb_audit', IDB_STORE='state', IDB_KEY='main';
 let autoSaveTimer = null;
-let lastSavedHash = '';
+let saving = false, resaveNeeded = false;
+
+/* ── IndexedDB ヘルパー（localStorageの約5MB制限を回避＝写真を大量保存可能） ── */
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    let r;
+    try{ r = indexedDB.open(IDB_NAME, 1); }catch(e){ return rej(e); }
+    r.onupgradeneeded = ()=>{ const db=r.result; if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror  = ()=>rej(r.error);
+  });
+}
+function idbSet(val){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(val, IDB_KEY);
+    tx.oncomplete=()=>{ db.close(); res(true); };
+    tx.onerror   =()=>{ db.close(); rej(tx.error); };
+    tx.onabort   =()=>{ db.close(); rej(tx.error||new Error('abort')); };
+  }));
+}
+function idbGet(){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const rq=tx.objectStore(IDB_STORE).get(IDB_KEY);
+    rq.onsuccess=()=>{ db.close(); res(rq.result||null); };
+    rq.onerror  =()=>{ db.close(); rej(rq.error); };
+  }));
+}
+function idbDel(){
+  return idbOpen().then(db=>new Promise((res)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(IDB_KEY);
+    tx.oncomplete=()=>{ db.close(); res(true); };
+    tx.onerror   =()=>{ db.close(); res(false); };
+  })).catch(()=>false);
+}
 
 /* ── データを1つのオブジェクトに固める ── */
 function buildSaveData(){
@@ -1453,33 +1526,44 @@ function applySaveData(d){
   return true;
 }
 
-/* ── ローカルストレージへ自動保存 ── */
+/* ── IndexedDBへ自動保存（大容量・写真もまるごと保存） ── */
 function lsSave(){
-  try {
-    const data = buildSaveData();
-    const json = JSON.stringify(data);
-    // 5MB 超えチェック（大量写真対策）
-    if(json.length > 4.5*1024*1024){
-      setStatus('warn','⚠️ データが大きすぎます（写真を減らしてください）');
-      return;
-    }
-    localStorage.setItem(LS_KEY, json);
-    lastSavedHash = json.length+'';
+  if(saving){ resaveNeeded = true; return; }   // 保存中なら終了後に再保存
+  saving = true;
+  const data = buildSaveData();
+  idbSet(data).then(()=>{
     const t = new Date();
     const ts = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
     setStatus('ok',`✅ 自動保存済み　${ts}`);
-  } catch(e){
-    setStatus('err','⚠️ 自動保存失敗（容量不足の可能性）');
-  }
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}   // 旧データの肥大分を掃除
+  }).catch(()=>{
+    setStatus('err','⚠️ 自動保存に失敗しました（端末の空き容量をご確認ください）');
+  }).finally(()=>{
+    saving = false;
+    if(resaveNeeded){ resaveNeeded = false; lsSave(); }
+  });
 }
 
-/* ── ローカルストレージから復元 ── */
+/* ── 復元：IndexedDB優先、無ければ旧localStorageから移行 ── */
 function lsLoad(){
-  try {
-    const json = localStorage.getItem(LS_KEY);
-    if(!json) return false;
-    return applySaveData(JSON.parse(json));
-  } catch(e){ return false; }
+  return idbGet().then(d=>{
+    if(d && applySaveData(d)) return true;
+    try{
+      const json = localStorage.getItem(LS_KEY);
+      if(json){
+        const ok = applySaveData(JSON.parse(json));
+        if(ok) lsSave();                 // IndexedDBへ移行保存
+        return ok;
+      }
+    }catch(e){}
+    return false;
+  }).catch(()=>{
+    try{
+      const json = localStorage.getItem(LS_KEY);
+      if(json) return applySaveData(JSON.parse(json));
+    }catch(e){}
+    return false;
+  });
 }
 
 /* ── 変更を検知して自動保存をスケジュール（2秒後） ── */
@@ -1521,7 +1605,7 @@ function loadJSON(e){
       const d = JSON.parse(ev.target.result);
       if(!applySaveData(d)){ toast('⚠️','ファイル形式が正しくありません'); return; }
       dBuild();
-      renderCheck();
+      renderCheckClean();
       updateProg();
       lsSave();
       toast('📂','データを読み込みました');
@@ -1543,9 +1627,10 @@ function confirmClear(){
   items = JSON.parse(JSON.stringify(BASE));
   customCnt = 0;
   dIdx = 0;
-  localStorage.removeItem(LS_KEY);
+  idbDel();
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
   dBuild();
-  renderCheck();
+  renderCheckClean();
   updateProg();
   renderInfo();
   setStatus('','💾 自動保存：未保存');
@@ -1571,9 +1656,6 @@ window.addEventListener('load',()=>{
     vEl.textContent = `${APP_VERSION} · sb${sb} nav${navH} · ${mode}`;
   }
 
-  // ── 起動時にローカルストレージから復元 ──
-  const restored = lsLoad();
-
   document.getElementById('drum-wrap').style.display='block';
   dPosition();
   dInit();
@@ -1581,11 +1663,18 @@ window.addEventListener('load',()=>{
   renderCheck();
   updateProg();
 
-  if(restored){
-    setStatus('ok','✅ 前回のデータを復元しました');
-  } else {
-    setStatus('','💾 自動保存：未保存');
-  }
+  // ── 起動時に保存データから復元（IndexedDBは非同期） ──
+  lsLoad().then(restored=>{
+    if(restored){
+      dBuild();
+      renderCheckClean();
+      updateProg();
+      try{ renderInfo(); }catch(e){}
+      setStatus('ok','✅ 前回のデータを復元しました');
+    } else {
+      setStatus('','💾 自動保存：未保存');
+    }
+  });
 
   window.addEventListener('resize',()=>{
     dPosition();
