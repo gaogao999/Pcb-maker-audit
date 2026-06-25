@@ -41,6 +41,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   display:flex;align-items:center;justify-content:center;font-size:17px;}
 .topbar-info{flex:1;min-width:0;}
 .topbar-title{font-size:14px;font-weight:700;letter-spacing:-.3px;}
+.topbar-ver{font-size:9px;font-weight:600;color:var(--t3);margin-top:1px;letter-spacing:.02em;}
 .topbar-meta{font-size:10px;color:var(--t2);margin-top:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .prog-ring{width:34px;height:34px;flex-shrink:0;}
@@ -347,6 +348,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   <div class="topbar-icon">🔬</div>
   <div class="topbar-info">
     <div class="topbar-title">PCB工程監査シート</div>
+    <div class="topbar-ver" id="tb-ver"></div>
     <div class="topbar-meta" id="tb-meta">監査情報を入力してください</div>
   </div>
   <svg class="prog-ring" viewBox="0 0 36 36">
@@ -530,8 +532,9 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   </div>
 </div>
 
-<!-- hidden file input for photo capture -->
-<input type="file" id="photo-input" accept="image/*" capture="environment" multiple
+<!-- hidden file input for photo (camera or library) -->
+<!-- capture属性を付けないことで「写真を撮る／ライブラリから選択」をiOSが選択可能に -->
+<input type="file" id="photo-input" accept="image/*" multiple
   style="display:none" onchange="onPhotoSelected(event)">
 
 <!-- lightbox -->
@@ -548,6 +551,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
+const APP_VERSION = 'v1.0.0 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1548,6 +1552,10 @@ function confirmClear(){
 
 // ══ INIT ══
 window.addEventListener('load',()=>{
+  // バージョン表示（キャッシュ確認用）
+  const vEl = document.getElementById('tb-ver');
+  if(vEl) vEl.textContent = APP_VERSION;
+
   // ── 起動時にローカルストレージから復元 ──
   const restored = lsLoad();
 
