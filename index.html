@@ -96,14 +96,14 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   position:fixed;bottom:0;left:0;right:0;z-index:300;
   background:rgba(13,15,24,.97);backdrop-filter:blur(14px);
   border-top:1px solid var(--border);
-  padding:8px 0 calc(var(--safe-bot) + 5px);display:flex;
+  padding:5px 0 calc(var(--safe-bot) + 3px);display:flex;
 }
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;
-  gap:3px;cursor:pointer;padding:3px 0;
-  color:var(--t3);font-size:10px;font-weight:600;
+  gap:2px;cursor:pointer;padding:2px 0;
+  color:var(--t3);font-size:9.5px;font-weight:600;
   -webkit-user-select:none;user-select:none;}
 .bnav-item.active{color:var(--blue);}
-.bnav-item svg{width:22px;height:22px;}
+.bnav-item svg{width:19px;height:19px;}
 .bnav-iw{position:relative;}
 .bnav-badge{
   position:absolute;top:-3px;right:-5px;
@@ -118,11 +118,11 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 /* check: topbar + drum + bottomnav */
 #sc-check{
   padding-top:calc(var(--safe-top) + 56px + 132px);
-  padding-bottom:calc(var(--safe-bot) + 62px);
+  padding-bottom:calc(var(--safe-bot) + 52px);
 }
 #sc-ng,#sc-info{
   padding-top:calc(var(--safe-top) + 58px);
-  padding-bottom:calc(var(--safe-bot) + 62px);
+  padding-bottom:calc(var(--safe-bot) + 52px);
 }
 
 /* CHECK */
@@ -714,6 +714,11 @@ const meta = {maker:'',target:'',date:new Date().toISOString().slice(0,10),audit
 let customCnt = 0;
 
 // ── DATA HELPERS ──
+// HTML特殊文字をエスケープ（コメントや追加項目に < & " 等が入っても表示が壊れないように）
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>(
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function getProcs(){
   const m={};
   items.forEach(i=>{
@@ -802,8 +807,8 @@ function dBuild(){
     const ngc = s.ng>0 ? 'var(--red)' : 'var(--t3)';
     return `<div class="drum-item${i===dIdx?' sel':''}" data-idx="${i}">
       <span class="d-icon">${ICONS[p.proc]||'🔧'}</span>
-      <span class="d-name">${p.proc}</span>
-      <span class="d-pn">${p.pn}</span>
+      <span class="d-name">${esc(p.proc)}</span>
+      <span class="d-pn">${esc(p.pn)}</span>
       <span class="d-stat">
         <span class="d-ok">✅${s.ok}</span>
         <span class="d-ng" style="color:${ngc}">❌${s.ng}</span>
@@ -951,7 +956,7 @@ function renderCheck(){
   let html = '';
   Object.entries(subs).forEach(([sub,arr])=>{
     html += `<div class="sub-lbl">
-      <span>${sub}</span>
+      <span>${esc(sub)}</span>
       <button class="sub-add" onclick="openAddItemInSub('${sub.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">＋ 追加</button>
     </div>`;
     arr.forEach(item=>{
@@ -963,8 +968,8 @@ function renderCheck(){
         ? `<button class="ci-del" onclick="delItem('${item.no}')">🗑</button>` : '';
       html += `<div class="ci ${r}" id="ci-${item.no}">
         <div class="ci-top">
-          <div class="ci-no${item._custom?' cust':''}">${item.no}</div>
-          <div class="ci-q">${item.q}</div>
+          <div class="ci-no${item._custom?' cust':''}">${esc(item.no)}</div>
+          <div class="ci-q">${esc(item.q)}</div>
           ${del}
         </div>
         <div class="ci-btns">
@@ -976,7 +981,7 @@ function renderCheck(){
           <textarea class="ci-cmt" rows="2" placeholder="コメントを入力..."
             oninput="setC('${item.no}',this.value)"
             onchange="setC('${item.no}',this.value)"
-            onblur="setC('${item.no}',this.value)">${c}</textarea>
+            onblur="setC('${item.no}',this.value)">${esc(c)}</textarea>
         </div>
         <div class="ci-photo-bar" id="pb-${item.no}">
           <div class="photo-lbl">
@@ -1110,7 +1115,7 @@ function renderInfo(){
     return `<div class="psc">
       <div class="psci">${ICONS[p.proc]||'🔧'}</div>
       <div style="flex:1;min-width:0">
-        <div class="pscn">${p.proc}　${p.pn}</div>
+        <div class="pscn">${esc(p.proc)}　${esc(p.pn)}</div>
         <div class="pscbr">
           <div class="pscb"><div class="pscbf" style="width:${pct}%"></div></div>
           <span style="font-size:10px;font-weight:800;color:${pc}">${pct}%</span>
@@ -1135,13 +1140,13 @@ function renderNG(){
   const byProc={};
   ngItems.forEach(i=>{ if(!byProc[i.proc]) byProc[i.proc]=[]; byProc[i.proc].push(i); });
   body.innerHTML = Object.entries(byProc).map(([proc,arr])=>`
-    <div class="ng-grp">${ICONS[proc]||'🔧'} ${proc} ${arr[0].pn}</div>
+    <div class="ng-grp">${ICONS[proc]||'🔧'} ${esc(proc)} ${esc(arr[0].pn)}</div>
     ${arr.map(item=>{
       const c = S[item.no]?.c||'';
       return `<div class="ng-item">
-        <div class="ng-it"><div class="ng-no">${item.no}</div><div class="ng-q">${item.q}</div></div>
-        <div class="ng-sub">${item.sub}　／　${item.cp}</div>
-        ${c?`<div class="ng-cmt"><div class="ng-cml">コメント</div>${c}</div>`:''}
+        <div class="ng-it"><div class="ng-no">${esc(item.no)}</div><div class="ng-q">${esc(item.q)}</div></div>
+        <div class="ng-sub">${esc(item.sub)}　／　${esc(item.cp)}</div>
+        ${c?`<div class="ng-cmt"><div class="ng-cml">コメント</div>${esc(c)}</div>`:''}
         ${(S[item.no]?.photos||[]).length>0?`
         <div class="ng-photos">
           ${(S[item.no].photos).map((ph,pi)=>`
@@ -1205,7 +1210,7 @@ function openAddItemInSub(sub){
   if(!p) return;
   const subs = [...new Set(items.filter(i=>i.proc===p.proc).map(i=>i.sub))];
   const sel = document.getElementById('ai-sub');
-  sel.innerHTML = subs.map(s=>`<option value="${s}"${s===sub?'selected':''}>${s}</option>`).join('');
+  sel.innerHTML = subs.map(s=>`<option value="${esc(s)}" ${s===sub?'selected':''}>${esc(s)}</option>`).join('');
   sel.innerHTML += `<option value="__new__">── 新規サブカテゴリ ──</option>`;
   document.getElementById('new-sub-f').style.display='none';
   document.getElementById('ai-cp').value='';
@@ -1315,18 +1320,20 @@ function onPhotoSelected(e){
   const no = photoTarget;
   if(!S[no]) S[no]={};
   if(!S[no].photos) S[no].photos=[];
-  let loaded = 0;
+  let loaded = 0, added = 0;
+  const done = ()=>{
+    loaded++;
+    if(loaded===files.length){
+      refreshPhotoBar(no);
+      scheduleAutoSave();
+      if(added>0) toast('📷', `写真を${added}枚追加しました`);
+      else toast('⚠️', '写真を読み込めませんでした');
+    }
+  };
   files.forEach(file=>{
     const reader = new FileReader();
-    reader.onload = ev=>{
-      S[no].photos.push(ev.target.result);
-      loaded++;
-      if(loaded===files.length){
-        refreshPhotoBar(no);
-        scheduleAutoSave();
-        toast('📷', `写真を${files.length}枚追加しました`);
-      }
-    };
+    reader.onload = ev=>{ S[no].photos.push(ev.target.result); added++; done(); };
+    reader.onerror = ()=>{ done(); };
     reader.readAsDataURL(file);
   });
 }
