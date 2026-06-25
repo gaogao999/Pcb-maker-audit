@@ -1,6 +1,6 @@
 // Minimal service worker for app-like / offline support.
 // Bump CACHE when assets change so clients pick up the new version.
-const CACHE = 'pcb-audit-v1';
+const CACHE = 'pcb-audit-v2';
 const ASSETS = [
   './',
   './index.html',
