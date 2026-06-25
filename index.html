@@ -98,7 +98,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   position:fixed;bottom:0;left:0;right:0;z-index:300;
   background:rgba(13,15,24,.97);backdrop-filter:blur(14px);
   border-top:1px solid var(--border);
-  padding:2px 0 calc(min(var(--safe-bot), 16px));display:flex;
+  padding:2px 0 calc(min(var(--safe-bot), 10px));display:flex;
 }
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;
   gap:1px;cursor:pointer;padding:1px 0;
@@ -120,11 +120,11 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 /* check: topbar + drum + bottomnav */
 #sc-check{
   padding-top:calc(var(--safe-top) + 56px + 132px);
-  padding-bottom:calc(min(var(--safe-bot), 16px) + 42px);
+  padding-bottom:calc(min(var(--safe-bot), 10px) + 40px);
 }
 #sc-ng,#sc-info{
   padding-top:calc(var(--safe-top) + 58px);
-  padding-bottom:calc(min(var(--safe-bot), 16px) + 42px);
+  padding-bottom:calc(min(var(--safe-bot), 10px) + 40px);
 }
 
 /* CHECK */
@@ -551,7 +551,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.0.1 (2026-06-25)';
+const APP_VERSION = 'v1.0.2 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1552,9 +1552,22 @@ function confirmClear(){
 
 // ══ INIT ══
 window.addEventListener('load',()=>{
-  // バージョン表示（キャッシュ確認用）
+  // バージョン表示＋診断（safe-area実測・表示モード）
   const vEl = document.getElementById('tb-ver');
-  if(vEl) vEl.textContent = APP_VERSION;
+  if(vEl){
+    let sb = 0;
+    try{
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;left:-9999px;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);';
+      document.body.appendChild(probe);
+      sb = Math.round(probe.getBoundingClientRect().height);
+      probe.remove();
+    }catch(e){}
+    const navH = Math.round((document.querySelector('.bnav')?.getBoundingClientRect().height)||0);
+    const mode = (window.navigator.standalone===true) ? 'app'
+      : (window.matchMedia && matchMedia('(display-mode: standalone)').matches ? 'pwa' : 'safari');
+    vEl.textContent = `${APP_VERSION} · sb${sb} nav${navH} · ${mode}`;
+  }
 
   // ── 起動時にローカルストレージから復元 ──
   const restored = lsLoad();
