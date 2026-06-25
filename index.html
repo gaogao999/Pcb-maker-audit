@@ -1577,13 +1577,17 @@ window.addEventListener('load',()=>{
 });
 </script>
 <script>
-// Service Worker 登録（インストール / オフライン対応）
+// 即時反映を最優先するため Service Worker は使用しない。
+// 過去に登録された Service Worker とキャッシュを解除して、常に最新を表示する。
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function (e) {
-      console.warn('SW registration failed:', e);
-    });
-  });
+  navigator.serviceWorker.getRegistrations().then(function (regs) {
+    regs.forEach(function (r) { r.unregister(); });
+  }).catch(function () {});
+}
+if (window.caches && caches.keys) {
+  caches.keys().then(function (keys) {
+    keys.forEach(function (k) { caches.delete(k); });
+  }).catch(function () {});
 }
 </script>
 </body>
