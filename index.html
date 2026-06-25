@@ -239,6 +239,11 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .ng-cmt{background:var(--card2);border-radius:7px;padding:7px 10px;
   font-size:12px;color:var(--t2);line-height:1.5;margin-top:5px;}
 .ng-cml{font-size:9px;color:var(--t3);margin-bottom:2px;font-weight:700;}
+/* OK一覧（NGのレイアウトを流用し緑系に） */
+.bnav-badge.ok-badge{background:var(--green);}
+.ok-exp{background:rgba(34,197,94,.12)!important;color:var(--green)!important;border-color:rgba(34,197,94,.28)!important;}
+.ok-item{border-left-color:var(--green)!important;}
+.ok-no{color:var(--green)!important;background:rgba(34,197,94,.12)!important;}
 
 /* PHOTOS */
 .ci-photo-bar{border-top:1px solid var(--border);padding:9px 12px;display:none;}
@@ -387,6 +392,14 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   <div id="ng-body"></div>
 </div>
 
+<div class="screen" id="sc-ok">
+  <div class="ng-hdr">
+    <h2>✅ OK一覧（コメント・写真あり）</h2>
+    <button class="ng-exp ok-exp" onclick="exportOK()">📥 Excel出力</button>
+  </div>
+  <div id="ok-body"></div>
+</div>
+
 <div class="screen" id="sc-info">
   <div class="info-body">
     <div class="info-sec">
@@ -475,6 +488,14 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
       <div class="bnav-badge" id="ng-badge">0</div>
     </div>NG一覧
   </div>
+  <div class="bnav-item" id="bn-ok" onclick="switchTab('ok')">
+    <div class="bnav-iw">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M8 12l2.5 2.5L16 9" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="bnav-badge ok-badge" id="ok-badge">0</div>
+    </div>OK一覧
+  </div>
   <div class="bnav-item" id="bn-info" onclick="switchTab('info')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="10"/>
@@ -553,7 +574,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.0.7 (2026-06-25)';
+const APP_VERSION = 'v1.0.8 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1068,6 +1089,9 @@ function updateProg(){
   const b  = document.getElementById('ng-badge');
   b.textContent = ng>99?'99+':ng;
   b.style.display = ng>0 ? 'flex' : 'none';
+  const okn = okNoteItems().length;
+  const ob  = document.getElementById('ok-badge');
+  if(ob){ ob.textContent = okn>99?'99+':okn; ob.style.display = okn>0 ? 'flex' : 'none'; }
 }
 
 // ══ TABS ══
@@ -1092,6 +1116,7 @@ function switchTab(tab){
   } else {
     dw.style.display = 'none';
     if(tab==='ng')   renderNG();
+    if(tab==='ok')   renderOK();
     if(tab==='info') renderInfo();
   }
 }
@@ -1158,6 +1183,43 @@ function renderNG(){
       const c = S[item.no]?.c||'';
       return `<div class="ng-item">
         <div class="ng-it"><div class="ng-no">${esc(item.no)}</div><div class="ng-q">${esc(item.q)}</div></div>
+        <div class="ng-sub">${esc(item.sub)}　／　${esc(item.cp)}</div>
+        ${c?`<div class="ng-cmt"><div class="ng-cml">コメント</div>${esc(c)}</div>`:''}
+        ${(S[item.no]?.photos||[]).length>0?`
+        <div class="ng-photos">
+          ${(S[item.no].photos).map((ph,pi)=>`
+            <div class="ng-photo-th" onclick="openLB('${item.no}',${pi})">
+              <img src="${ph}" alt="">
+            </div>`).join('')}
+        </div>`:''}
+      </div>`;
+    }).join('')}`
+  ).join('');
+}
+
+// ══ OK一覧（コメント or 写真があるOK項目のみ） ══
+function okNoteItems(){
+  return items.filter(i=>{
+    const s = S[i.no];
+    if(s?.r!=='ok') return false;
+    return (s.c && s.c.trim()) || (s.photos && s.photos.length>0);
+  });
+}
+function renderOK(){
+  const okItems = okNoteItems();
+  const body = document.getElementById('ok-body');
+  if(!okItems.length){
+    body.innerHTML=`<div class="ng-empty"><div class="ng-eic">📝</div>コメント・写真付きのOK項目はありません</div>`;
+    return;
+  }
+  const byProc={};
+  okItems.forEach(i=>{ if(!byProc[i.proc]) byProc[i.proc]=[]; byProc[i.proc].push(i); });
+  body.innerHTML = Object.entries(byProc).map(([proc,arr])=>`
+    <div class="ng-grp">${ICONS[proc]||'🔧'} ${esc(proc)} ${esc(arr[0].pn)}</div>
+    ${arr.map(item=>{
+      const c = S[item.no]?.c||'';
+      return `<div class="ng-item ok-item">
+        <div class="ng-it"><div class="ng-no ok-no">${esc(item.no)}</div><div class="ng-q">${esc(item.q)}</div></div>
         <div class="ng-sub">${esc(item.sub)}　／　${esc(item.cp)}</div>
         ${c?`<div class="ng-cmt"><div class="ng-cml">コメント</div>${esc(c)}</div>`:''}
         ${(S[item.no]?.photos||[]).length>0?`
@@ -1313,6 +1375,23 @@ function exportNG(){
   XLSX.writeFile(wb,`PCB_NG報告_${meta.target||meta.maker||'report'}_${meta.date||'nodate'}.xlsx`);
   toast('🚨','NG報告書をダウンロードしました');
 }
+function exportOK(){
+  const ok=okNoteItems();
+  if(!ok.length){ toast('ℹ️','コメント・写真付きのOK項目がありません'); return; }
+  const wb=XLSX.utils.book_new();
+  const r=[['No.','工程','工程名','小項目','チェックポイント','確認事項','コメント','写真枚数']];
+  ok.forEach(i=>r.push([i.no,i.proc,i.pn,i.sub,i.cp,i.q,S[i.no]?.c||'',(S[i.no]?.photos||[]).length||'']));
+  const ws=XLSX.utils.aoa_to_sheet(r);
+  ws['!cols']=[{wch:8},{wch:8},{wch:20},{wch:22},{wch:16},{wch:55},{wch:40},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws,'OK項目（コメント写真あり）');
+  const wsc=XLSX.utils.aoa_to_sheet([
+    ['PCBメーカー工程監査シート　OK項目（コメント・写真あり）'],[''],
+    ['メーカー名',meta.maker],['監査対象会社',meta.target],
+    ['監査日',meta.date],['監査員',meta.auditor],['抽出件数',ok.length]]);
+  XLSX.utils.book_append_sheet(wb,wsc,'レポート情報');
+  XLSX.writeFile(wb,`PCB_OK報告_${meta.target||meta.maker||'report'}_${meta.date||'nodate'}.xlsx`);
+  toast('✅','OK一覧をダウンロードしました');
+}
 
 // ══ PHOTO ══
 let photoTarget = null; // item no currently being photographed
@@ -1366,6 +1445,7 @@ function onPhotoSelected(e){
     loaded++;
     if(loaded===files.length){
       refreshPhotoBar(no);
+      updateProg();   // OK一覧バッジ等の更新
       scheduleAutoSave();
       if(added>0) toast('📷', `写真を${added}枚追加しました`);
       else toast('⚠️', '写真を読み込めませんでした');
@@ -1404,6 +1484,7 @@ function delPhoto(no, idx){
   if(!S[no]?.photos) return;
   S[no].photos.splice(idx,1);
   refreshPhotoBar(no);
+  updateProg();
   scheduleAutoSave();
   // close lightbox if open on deleted photo
   if(lbNo===no) closeLB();
