@@ -321,6 +321,19 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .wiz-body::-webkit-scrollbar{display:none;}
 .wiz-card{position:relative;background:var(--card);border:1px solid var(--border);
   border-radius:16px;padding:18px 16px;will-change:transform;touch-action:pan-y;}
+.wiz-card.ok{border-left:4px solid var(--green);}
+.wiz-card.ng{border-left:4px solid var(--red);}
+.wiz-card.na{border-left:4px solid var(--t3);}
+.wiz-state{display:inline-block;font-size:11px;font-weight:700;color:var(--t2);
+  background:var(--card2);border:1px solid var(--border);border-radius:99px;
+  padding:5px 11px;margin-bottom:4px;}
+.wiz-state.ok{color:var(--green);border-color:rgba(34,197,94,.4);}
+.wiz-state.ng{color:var(--red);border-color:rgba(240,82,82,.4);}
+.wiz-na{display:block;margin:14px auto 0;padding:9px 22px;border-radius:99px;
+  border:1px solid var(--border);background:var(--card);color:var(--t3);
+  font-size:12px;font-weight:700;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.wiz-na:active{color:var(--t2);border-color:var(--t2);}
 .wiz-hint{position:absolute;top:14px;font-size:15px;font-weight:800;opacity:0;
   padding:6px 12px;border-radius:9px;pointer-events:none;transition:opacity .1s;}
 .wiz-hint.ok{left:12px;color:var(--green);background:rgba(34,197,94,.15);border:1.5px solid var(--green);}
@@ -749,7 +762,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.4.2 (2026-06-25)';
+const APP_VERSION = 'v1.4.4 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1340,13 +1353,25 @@ const wiz = {list:[], idx:0};
 function wizOpen(){ return document.getElementById('wizard').classList.contains('show'); }
 function wizStart(){
   flushComments();
-  const p = getProcs()[dIdx]; if(!p) return;
-  wiz.list = p.items.map(i=>i.no);
-  wiz.idx  = Math.max(0, wiz.list.findIndex(no=>!S[no]?.r));
+  // 全工程を通しでチェック（現在の工程の先頭以降で最初の未回答から開始）
+  wiz.list = items.map(i=>i.no);
+  const p = getProcs()[dIdx];
+  let startPos = 0;
+  if(p && p.items.length) startPos = Math.max(0, wiz.list.indexOf(p.items[0].no));
+  let idx = -1;
+  for(let k=startPos;k<wiz.list.length;k++){ if(!S[wiz.list[k]]?.r){ idx=k; break; } }
+  if(idx<0) for(let k=0;k<wiz.list.length;k++){ if(!S[wiz.list[k]]?.r){ idx=k; break; } }
+  wiz.idx = idx>=0 ? idx : wiz.list.length;   // 全回答済みなら完了画面へ
   document.getElementById('wizard').classList.add('show');
   wizRender();
 }
 function wizClose(){
+  // 閉じた位置の工程にドラムを合わせる
+  const it = wizItem();
+  if(it){
+    const idx = getProcs().findIndex(p=>p.proc===it.proc);
+    if(idx>=0 && idx!==dIdx){ dIdx=idx; dBuild(); }
+  }
   document.getElementById('wizard').classList.remove('show');
   renderCheck(); updateProg(); dUpdateLabels();
 }
@@ -1354,8 +1379,8 @@ function wizItem(){ return items.find(i=>i.no===wiz.list[wiz.idx]); }
 function wizProgress(){
   const total = wiz.list.length;
   const done  = wiz.list.filter(no=>S[no]?.r).length;
-  const p = getProcs()[dIdx];
-  document.getElementById('wiz-prog-t').textContent = `${p?p.proc:''}　${done}/${total}`;
+  const it = wizItem();
+  document.getElementById('wiz-prog-t').textContent = `${it?it.proc:'完了'}　${done}/${total}`;
   document.getElementById('wiz-bar-f').style.width = (total?Math.round(done/total*100):0)+'%';
 }
 function wizRender(){
@@ -1367,16 +1392,12 @@ function wizRender(){
   const r  = sv.r||'';
   const photos = sv.photos||[];
   body.innerHTML = `
-    <div class="wiz-card" id="wiz-card">
+    <div class="wiz-card${r?' '+r:''}" id="wiz-card">
       <div class="wiz-hint ok">✅ OK</div>
       <div class="wiz-hint ng">❌ NG</div>
-      <div class="wiz-no"><b>${esc(it.no)}</b>${esc(it.sub)}　／　${esc(it.cp)}</div>
+      <div class="wiz-no"><b>${esc(it.no)}</b>${ICONS[it.proc]||''} ${esc(it.proc)}　${esc(it.sub)}　／　${esc(it.cp)}</div>
       <div class="wiz-q">${esc(it.q)}</div>
-      <div class="wiz-btns">
-        <button class="wiz-b ok${r==='ok'?' sel':''}" onclick="wizAnswer('ok')">✅ OK</button>
-        <button class="wiz-b ng${r==='ng'?' sel':''}" onclick="wizAnswer('ng')">❌ NG</button>
-        <button class="wiz-b na${r==='na'?' sel':''}" onclick="wizAnswer('na')">— N/A</button>
-      </div>
+      ${r?`<div class="wiz-state ${r}">${r==='ok'?'✅ OK':r==='ng'?'❌ NG':'— N/A'} と回答済み（スワイプで変更可）</div>`:''}
       ${(r==='ok'||r==='ng')?`
       <div class="wiz-cmt-wrap">
         <div class="qc-chips">${QC_PHRASES.map(t=>`<button class="qc-chip" onclick="wizQC('${t}')">${t}</button>`).join('')}</div>
@@ -1392,7 +1413,8 @@ function wizRender(){
         </div>
       </div>`:''}
     </div>
-    <div class="wiz-swipe-hint">カードを右へスワイプ ＝ ✅ OK<br>カードを左へスワイプ ＝ ❌ NG</div>`;
+    <div class="wiz-swipe-hint">右へスワイプ ＝ ✅ OK　／　左へスワイプ ＝ ❌ NG</div>
+    <button class="wiz-na" onclick="wizAnswer('na')">— N/A（対象外）</button>`;
 }
 function wizQC(t){
   const ta = document.getElementById('wz-cmt');
@@ -1430,7 +1452,7 @@ function wizDone(){
   document.getElementById('wiz-body').innerHTML = `
     <div class="wiz-done">
       <div class="wiz-done-ic">🎉</div>
-      この工程のチェックが完了しました<br>
+      全工程のチェックが完了しました<br>
       <b style="color:var(--green)">✅ ${ok}</b>　<b style="color:var(--red)">❌ ${ng}</b>　<b style="color:var(--t2)">— ${na}</b><br><br>
       <button class="wiz-nb" style="max-width:220px" onclick="wizClose()">リストに戻る</button>
     </div>`;
