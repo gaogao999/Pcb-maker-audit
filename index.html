@@ -121,7 +121,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 /* check: topbar + drum + bottomnav */
 #sc-check{
   padding-top:calc(var(--safe-top) + 56px + 132px);
-  padding-bottom:calc(min(var(--safe-bot), 18px) + 40px);
+  padding-bottom:calc(min(var(--safe-bot), 18px) + 96px);
 }
 #sc-ng,#sc-info,#sc-ok,#sc-fac{
   padding-top:calc(var(--safe-top) + 58px);
@@ -350,6 +350,17 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .wiz-nb:active{border-color:var(--blue);color:var(--blue);}
 .wiz-done{text-align:center;padding:50px 20px;color:var(--t2);font-size:15px;line-height:1.8;}
 .wiz-done-ic{font-size:52px;margin-bottom:14px;}
+/* 次の未回答へ（右下フローティングボタン） */
+.fab-next{position:fixed;right:14px;
+  bottom:calc(min(var(--safe-bot),18px) + 56px);z-index:280;
+  padding:13px 17px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;
+  font-size:13px;font-weight:800;cursor:pointer;
+  box-shadow:0 6px 20px rgba(79,142,247,.45);
+  display:flex;align-items:center;gap:6px;
+  -webkit-user-select:none;user-select:none;}
+.fab-next:active{opacity:.85;transform:scale(.96);}
+.fab-next.hide{display:none;}
 .ok-exp{background:rgba(34,197,94,.12)!important;color:var(--green)!important;border-color:rgba(34,197,94,.28)!important;}
 .ok-item{border-left-color:var(--green)!important;}
 .ok-no{color:var(--green)!important;background:rgba(34,197,94,.12)!important;}
@@ -492,10 +503,10 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   </div>
   <div class="chk-tools">
     <button class="tool-btn" id="flt-unans" onclick="toggleChkFilter()">未回答のみ表示</button>
-    <button class="tool-btn" onclick="jumpUnanswered()">⬇ 次の未回答へ</button>
     <button class="tool-btn" onclick="wizStart()">🪄 ウィザード入力</button>
   </div>
   <div id="chk-body"></div>
+  <button class="fab-next" id="fab-next" onclick="jumpUnanswered()">⬇ 次の未回答へ</button>
 </div>
 
 <div class="screen" id="sc-ng">
@@ -738,7 +749,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.4.1 (2026-06-25)';
+const APP_VERSION = 'v1.4.2 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1561,6 +1572,13 @@ function updateProg(){
   const okn = okNoteItems().length;
   const ob  = document.getElementById('ok-badge');
   if(ob){ ob.textContent = okn>99?'99+':okn; ob.style.display = okn>0 ? 'flex' : 'none'; }
+  // 現在の工程が全回答済みなら「次の未回答へ」ボタンを隠す
+  const fab = document.getElementById('fab-next');
+  if(fab){
+    const p = getProcs()[dIdx];
+    const remain = p ? p.items.filter(i=>!S[i.no]?.r).length : 0;
+    fab.classList.toggle('hide', remain===0);
+  }
 }
 
 // ══ TABS ══
