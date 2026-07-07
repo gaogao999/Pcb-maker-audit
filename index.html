@@ -765,7 +765,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.4.6 (2026-06-25)';
+const APP_VERSION = 'v1.4.7 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1412,7 +1412,6 @@ function wizRender(){
       <div class="wiz-no"><b>${esc(it.no)}</b>${ICONS[it.proc]||''} ${esc(it.proc)}　${esc(it.sub)}　／　${esc(it.cp)}</div>
       <div class="wiz-q">${esc(it.q)}</div>
       ${r?`<div class="wiz-state ${r}">${r==='ok'?'✅ OK':r==='ng'?'❌ NG':'— N/A'} と回答済み（スワイプで変更可）</div>`:''}
-      ${(r==='ok'||r==='ng')?`
       <div class="wiz-cmt-wrap">
         <div class="qc-chips">${QC_PHRASES.map(t=>`<button class="qc-chip" onclick="wizQC('${t}')">${t}</button>`).join('')}</div>
         <textarea class="wiz-cmt" id="wz-cmt" placeholder="コメントを入力..."
@@ -1425,7 +1424,7 @@ function wizRender(){
             </div>`).join('')}
           <button class="photo-add" onclick="triggerPhoto('${it.no}')"><span class="pi">📷</span>追加</button>
         </div>
-      </div>`:''}
+      </div>
     </div>
     <div class="wiz-swipe-hint">右へスワイプ ＝ ✅ OK　／　左へスワイプ ＝ ❌ NG</div>
     <button class="wiz-na" onclick="wizAnswer('na')">— N/A（対象外）</button>`;
