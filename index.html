@@ -263,6 +263,29 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   color:var(--text);font-size:14px;font-family:inherit;padding:9px 10px;outline:none;}
 .fac-input:focus{border-color:var(--blue);}
 .fac-input::placeholder{color:var(--t3);}
+/* 入力支援 */
+.chk-tools{display:flex;gap:8px;padding:0 14px 4px;}
+.tool-btn{flex:none;padding:7px 12px;border-radius:99px;border:1px solid var(--border);
+  background:var(--card);color:var(--t2);font-size:11px;font-weight:700;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.tool-btn.on{border-color:var(--blue);color:var(--blue);background:rgba(79,142,247,.1);}
+.tool-btn:active{opacity:.7;}
+.sub-ok{font-size:11px;color:var(--t3);background:none;border:none;cursor:pointer;margin-right:10px;}
+.sub-ok:active{color:var(--green);}
+.qc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+.qc-chip{padding:5px 10px;border-radius:99px;border:1px solid var(--border);
+  background:var(--card2);color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.qc-chip:active{border-color:var(--blue);color:var(--blue);}
+.fac-tools{display:flex;gap:8px;padding:0 14px 8px;}
+.fac-chips{display:flex;gap:7px;margin-bottom:7px;}
+.fac-chip{flex:1;padding:9px 0;border-radius:8px;border:1px solid var(--border);
+  background:var(--card2);color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.fac-chip.sel{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.12);}
+.fac-ex{margin-top:6px;font-size:11px;color:var(--t3);cursor:pointer;line-height:1.5;
+  -webkit-user-select:none;user-select:none;}
+.fac-ex:active{color:var(--blue);}
 .ok-exp{background:rgba(34,197,94,.12)!important;color:var(--green)!important;border-color:rgba(34,197,94,.28)!important;}
 .ok-item{border-left-color:var(--green)!important;}
 .ok-no{color:var(--green)!important;background:rgba(34,197,94,.12)!important;}
@@ -403,6 +426,10 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
     <div class="chk-stat" id="chk-stat"></div>
     <button class="add-btn" onclick="openAddItem()">＋ 項目追加</button>
   </div>
+  <div class="chk-tools">
+    <button class="tool-btn" id="flt-unans" onclick="toggleChkFilter()">未回答のみ表示</button>
+    <button class="tool-btn" onclick="jumpUnanswered()">⬇ 次の未回答へ</button>
+  </div>
   <div id="chk-body"></div>
 </div>
 
@@ -426,6 +453,9 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   <div class="ng-hdr">
     <h2>🏭 工場情報</h2>
     <button class="ng-exp fac-exp" onclick="exportFactory()">📥 Excel出力</button>
+  </div>
+  <div class="fac-tools">
+    <button class="tool-btn" id="flt-unfilled" onclick="toggleFacFilter()">未入力のみ表示</button>
   </div>
   <div id="fac-body"></div>
 </div>
@@ -609,7 +639,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.1.1 (2026-06-25)';
+const APP_VERSION = 'v1.2.0 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1020,11 +1050,18 @@ function renderCheck(){
 
   let html = '';
   Object.entries(subs).forEach(([sub,arr])=>{
+    const shown = chkUnansweredOnly ? arr.filter(i=>!(S[i.no]?.r)) : arr;
+    if(!shown.length) return;   // フィルタ中、全回答済みの小項目は隠す
+    const escSub = sub.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const remain = arr.filter(i=>!(S[i.no]?.r)).length;
     html += `<div class="sub-lbl">
       <span>${esc(sub)}</span>
-      <button class="sub-add" onclick="openAddItemInSub('${sub.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">＋ 追加</button>
+      <span>
+        ${remain>0?`<button class="sub-ok" onclick="bulkOK('${escSub}')">✓ 残り${remain}件をOK</button>`:''}
+        <button class="sub-add" onclick="openAddItemInSub('${escSub}')">＋ 追加</button>
+      </span>
     </div>`;
-    arr.forEach(item=>{
+    shown.forEach(item=>{
       const sv = S[item.no]||{};
       const r  = sv.r||'';
       const c  = sv.c||'';
@@ -1043,6 +1080,7 @@ function renderCheck(){
           <button class="ci-rb${r==='na'?' na':''}" onclick="setR('${item.no}','na')">— N/A</button>
         </div>
         <div class="ci-comment">
+          <div class="qc-chips">${QC_PHRASES.map(t=>`<button class="qc-chip" onclick="insertQC('${item.no}','${t}')">${t}</button>`).join('')}</div>
           <textarea class="ci-cmt" rows="2" placeholder="コメントを入力..."
             oninput="setC('${item.no}',this.value)"
             onchange="setC('${item.no}',this.value)"
@@ -1067,6 +1105,9 @@ function renderCheck(){
       </div>`;
     });
   });
+  if(!html && chkUnansweredOnly){
+    html = `<div class="ng-empty"><div class="ng-eic">🎉</div>この工程は全て回答済みです</div>`;
+  }
   document.getElementById('chk-body').innerHTML = html;
 }
 
@@ -1076,6 +1117,45 @@ function renderCheckClean(){
   const body = document.getElementById('chk-body');
   if(body) body.innerHTML = '';
   renderCheck();
+}
+
+// ══ 入力支援（チェックタブ） ══
+const QC_PHRASES = ['問題なし','記録確認済み','現場確認済み','要改善','是正依頼','次回フォロー'];
+let chkUnansweredOnly = false;
+
+function toggleChkFilter(){
+  flushComments();
+  chkUnansweredOnly = !chkUnansweredOnly;
+  document.getElementById('flt-unans').classList.toggle('on', chkUnansweredOnly);
+  renderCheck();
+}
+/* 定型文をコメント欄に追記 */
+function insertQC(no, t){
+  const ci = document.getElementById('ci-'+no);
+  const ta = ci ? ci.querySelector('.ci-cmt') : null;
+  if(!ta) return;
+  ta.value = ta.value.trim() ? ta.value.replace(/\s+$/,'')+'、'+t : t;
+  setC(no, ta.value);
+}
+/* 小項目内の未回答をまとめてOK */
+function bulkOK(sub){
+  flushComments();
+  const p = getProcs()[dIdx]; if(!p) return;
+  let n = 0;
+  p.items.forEach(i=>{
+    if(i.sub===sub && !(S[i.no]?.r)){ if(!S[i.no]) S[i.no]={}; S[i.no].r='ok'; n++; }
+  });
+  if(!n){ toast('ℹ️','未回答はありません'); return; }
+  renderCheck(); updateProg(); dUpdateLabels(); scheduleAutoSave();
+  toast('✅',`${n}件をOKにしました`);
+}
+/* 次の未回答項目へスクロール */
+function jumpUnanswered(){
+  const els = [...document.querySelectorAll('#chk-body .ci')]
+    .filter(el=>!/\b(ok|ng|na)\b/.test(el.className));
+  if(!els.length){ toast('🎉','この工程は全て回答済みです'); return; }
+  const next = els.find(el=>el.getBoundingClientRect().top > 260) || els[0];
+  next.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 function setC(no,v){
@@ -1276,20 +1356,58 @@ function renderOK(){
 
 // ══ 工場情報 ══
 const facOpen = new Set();   // 開いている大項目
-function setFac(id, v){ factory[id] = v; scheduleAutoSave(); }
+let facUnfilledOnly = false;
+
+function setFac(id, v){
+  factory[id] = v;
+  const exl = document.getElementById('facex-'+id);
+  if(exl) exl.style.display = v.trim() ? 'none' : '';
+  scheduleAutoSave();
+}
 function toggleFac(idx){
   const sec = document.getElementById('facsec-'+idx);
   if(!sec) return;
   const cat = sec.dataset.cat;
   if(sec.classList.toggle('open')) facOpen.add(cat); else facOpen.delete(cat);
 }
+function toggleFacFilter(){
+  facUnfilledOnly = !facUnfilledOnly;
+  document.getElementById('flt-unfilled').classList.toggle('on', facUnfilledOnly);
+  renderFactory();
+}
+/* 可/不可・有り/無し系はワンタップ選択肢を出す */
+function facChoices(it){
+  const ex = (it.ex||'').trim();
+  if(/可 available|不可 not available/.test(ex)) return ['可','不可'];
+  if(ex==='有り'||ex==='無し') return ['有り','無し'];
+  return null;
+}
+function setFacChip(id, v){
+  factory[id] = v;
+  const inp = document.getElementById('fac-'+id);
+  if(inp) inp.value = v;
+  document.querySelectorAll(`[data-chip="${id}"]`).forEach(b=>b.classList.toggle('sel', b.textContent===v));
+  scheduleAutoSave();
+}
+/* 記入例をタップでそのまま入力 */
+function useFacEx(id){
+  const it = FACTORY_ITEMS.find(x=>x.id===id); if(!it) return;
+  factory[id] = it.ex;
+  const inp = document.getElementById('fac-'+id);
+  if(inp){ inp.value = it.ex; inp.focus(); }
+  const exl = document.getElementById('facex-'+id);
+  if(exl) exl.style.display = 'none';
+  scheduleAutoSave();
+}
 function renderFactory(){
   const body = document.getElementById('fac-body');
   if(!body) return;
   const groups = {};
   FACTORY_ITEMS.forEach(it=>{ (groups[it.cat] = groups[it.cat]||[]).push(it); });
-  body.innerHTML = Object.entries(groups).map(([cat,arr],idx)=>{
+  const out = Object.entries(groups).map(([cat,arr],idx)=>{
     const filled = arr.filter(it=>(factory[it.id]||'').trim()).length;
+    const shown = facUnfilledOnly ? arr.filter(it=>!(factory[it.id]||'').trim()) : arr;
+    if(!shown.length) return '';   // フィルタ中、全入力済みの大項目は隠す
     const openCls = facOpen.has(cat) ? ' open' : '';
     const doneCls = filled===arr.length ? ' done' : '';
     return `<div class="fac-sec${openCls}" id="facsec-${idx}" data-cat="${esc(cat)}">
@@ -1301,15 +1419,21 @@ function renderFactory(){
         </span>
       </div>
       <div class="fac-items">
-        ${arr.map(it=>`
-          <div class="fac-item">
+        ${shown.map(it=>{
+          const val = factory[it.id]||'';
+          const ch  = facChoices(it);
+          return `<div class="fac-item">
             <div class="fac-label">${esc(it.label)}${it.hint?` <span class="fac-hint">${esc(it.hint)}</span>`:''}</div>
-            <input class="fac-input" id="fac-${it.id}" value="${esc(factory[it.id]||'')}"
-              placeholder="${it.ex?('例: '+esc(it.ex)):''}" oninput="setFac('${it.id}',this.value)">
-          </div>`).join('')}
+            ${ch?`<div class="fac-chips">${ch.map(c=>`<button class="fac-chip${val===c?' sel':''}" data-chip="${it.id}" onclick="setFacChip('${it.id}','${c}')">${c}</button>`).join('')}</div>`:''}
+            <input class="fac-input" id="fac-${it.id}" value="${esc(val)}"
+              placeholder="${ch?'（補足があれば入力）':'入力...'}" oninput="setFac('${it.id}',this.value)">
+            ${(!ch&&it.ex)?`<div class="fac-ex" id="facex-${it.id}"${val.trim()?' style="display:none"':''} onclick="useFacEx('${it.id}')">💡 例: ${esc(it.ex)}（タップで入力）</div>`:''}
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
   }).join('');
+  body.innerHTML = out || `<div class="ng-empty"><div class="ng-eic">🎉</div>全て入力済みです</div>`;
 }
 function exportFactory(){
   const wb = XLSX.utils.book_new();
