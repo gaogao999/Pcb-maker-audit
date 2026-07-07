@@ -241,13 +241,22 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .ng-cml{font-size:9px;color:var(--t3);margin-bottom:2px;font-weight:700;}
 /* OK一覧（NGのレイアウトを流用し緑系に） */
 .bnav-badge.ok-badge{background:var(--green);}
-/* 工場情報フォーム */
+/* 工場情報フォーム（大項目アコーディオン） */
 .fac-exp{background:rgba(79,142,247,.12)!important;color:var(--blue)!important;border-color:rgba(79,142,247,.28)!important;}
-.fac-note{margin:0 14px 4px;font-size:11px;color:var(--t3);line-height:1.5;}
-.fac-grp{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--blue);
-  text-transform:uppercase;padding:16px 14px 6px;}
-.fac-item{margin:0 14px 8px;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r);padding:10px 12px;}
+.fac-sec{margin:0 14px 8px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;}
+.fac-head{display:flex;align-items:center;justify-content:space-between;
+  padding:14px;cursor:pointer;-webkit-user-select:none;user-select:none;}
+.fac-head:active{background:var(--card2);}
+.fac-head-t{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.02em;}
+.fac-head-meta{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.fac-count{font-size:11px;font-weight:700;color:var(--t3);}
+.fac-count.done{color:var(--green);}
+.fac-caret{font-size:11px;color:var(--t3);transition:transform .2s;}
+.fac-sec.open .fac-caret{transform:rotate(180deg);}
+.fac-items{display:none;padding:2px 14px 12px;border-top:1px solid var(--border);}
+.fac-sec.open .fac-items{display:block;}
+.fac-item{margin-top:12px;}
 .fac-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.45;}
 .fac-hint{font-size:10px;font-weight:500;color:var(--t3);}
 .fac-input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;
@@ -418,7 +427,6 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
     <h2>🏭 工場情報</h2>
     <button class="ng-exp fac-exp" onclick="exportFactory()">📥 Excel出力</button>
   </div>
-  <div class="fac-note">APEX Factory information（記入例をグレー表示。上書きで入力）</div>
   <div id="fac-body"></div>
 </div>
 
@@ -601,7 +609,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.1.0 (2026-06-25)';
+const APP_VERSION = 'v1.1.1 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1267,22 +1275,41 @@ function renderOK(){
 }
 
 // ══ 工場情報 ══
-function facFilledCount(){ return FACTORY_ITEMS.filter(it=>(factory[it.id]||'').trim()).length; }
+const facOpen = new Set();   // 開いている大項目
 function setFac(id, v){ factory[id] = v; scheduleAutoSave(); }
+function toggleFac(idx){
+  const sec = document.getElementById('facsec-'+idx);
+  if(!sec) return;
+  const cat = sec.dataset.cat;
+  if(sec.classList.toggle('open')) facOpen.add(cat); else facOpen.delete(cat);
+}
 function renderFactory(){
   const body = document.getElementById('fac-body');
   if(!body) return;
   const groups = {};
   FACTORY_ITEMS.forEach(it=>{ (groups[it.cat] = groups[it.cat]||[]).push(it); });
-  body.innerHTML = Object.entries(groups).map(([cat,arr])=>`
-    <div class="fac-grp">${esc(cat)}</div>
-    ${arr.map(it=>`
-      <div class="fac-item">
-        <div class="fac-label">${esc(it.label)}${it.hint?` <span class="fac-hint">${esc(it.hint)}</span>`:''}</div>
-        <input class="fac-input" id="fac-${it.id}" value="${esc(factory[it.id]||'')}"
-          placeholder="${it.ex?('例: '+esc(it.ex)):''}" oninput="setFac('${it.id}',this.value)">
-      </div>`).join('')}
-  `).join('');
+  body.innerHTML = Object.entries(groups).map(([cat,arr],idx)=>{
+    const filled = arr.filter(it=>(factory[it.id]||'').trim()).length;
+    const openCls = facOpen.has(cat) ? ' open' : '';
+    const doneCls = filled===arr.length ? ' done' : '';
+    return `<div class="fac-sec${openCls}" id="facsec-${idx}" data-cat="${esc(cat)}">
+      <div class="fac-head" onclick="toggleFac(${idx})">
+        <span class="fac-head-t">${esc(cat)}</span>
+        <span class="fac-head-meta">
+          <span class="fac-count${doneCls}">${filled}/${arr.length}</span>
+          <span class="fac-caret">▾</span>
+        </span>
+      </div>
+      <div class="fac-items">
+        ${arr.map(it=>`
+          <div class="fac-item">
+            <div class="fac-label">${esc(it.label)}${it.hint?` <span class="fac-hint">${esc(it.hint)}</span>`:''}</div>
+            <input class="fac-input" id="fac-${it.id}" value="${esc(factory[it.id]||'')}"
+              placeholder="${it.ex?('例: '+esc(it.ex)):''}" oninput="setFac('${it.id}',this.value)">
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 function exportFactory(){
   const wb = XLSX.utils.book_new();
