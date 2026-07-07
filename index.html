@@ -639,7 +639,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.2.0 (2026-06-25)';
+const APP_VERSION = 'v1.2.1 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1041,7 +1041,7 @@ function renderCheck(){
   const p = procs[dIdx] || procs[0];
   const s = stat(p.items);
   document.getElementById('chk-stat').innerHTML =
-    `<b>${p.proc}</b>　${s.done}/${s.total}　`+
+    `<b>${esc(p.proc)}</b>　${s.done}/${s.total}　`+
     `<span style="color:var(--green)">✅${s.ok}</span>　`+
     `<span style="color:${s.ng>0?'var(--red)':'var(--t3)'}">❌${s.ng}</span>`;
 
@@ -1052,7 +1052,8 @@ function renderCheck(){
   Object.entries(subs).forEach(([sub,arr])=>{
     const shown = chkUnansweredOnly ? arr.filter(i=>!(S[i.no]?.r)) : arr;
     if(!shown.length) return;   // フィルタ中、全回答済みの小項目は隠す
-    const escSub = sub.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    // JS文字列用エスケープ→さらにHTML属性用エスケープ（" を含む小項目名対策）
+    const escSub = esc(sub.replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
     const remain = arr.filter(i=>!(S[i.no]?.r)).length;
     html += `<div class="sub-lbl">
       <span>${esc(sub)}</span>
@@ -1161,6 +1162,7 @@ function jumpUnanswered(){
 function setC(no,v){
   if(!S[no]) S[no]={};
   S[no].c = v;
+  updateProg();   // OK一覧バッジ（コメント有無で変わる）を追従
   scheduleAutoSave();
 }
 
@@ -1179,6 +1181,8 @@ function setR(no,r){
   updateProg();
   dUpdateLabels();
   scheduleAutoSave();
+  // 「未回答のみ表示」中は回答した項目を即座にリストから消し、残り件数も更新
+  if(chkUnansweredOnly && S[no].r) renderCheck();
 }
 function delItem(no){
   if(!confirm('この項目を削除しますか？')) return;
@@ -1436,13 +1440,14 @@ function renderFactory(){
   body.innerHTML = out || `<div class="ng-empty"><div class="ng-eic">🎉</div>全て入力済みです</div>`;
 }
 function exportFactory(){
+  if(!xlsxReady()) return;
   const wb = XLSX.utils.book_new();
   const r = [['カテゴリ','項目','記入内容','記入ヒント','記入例']];
   FACTORY_ITEMS.forEach(it=> r.push([it.cat, it.label, factory[it.id]||'', it.hint||'', it.ex||'']));
   const ws = XLSX.utils.aoa_to_sheet(r);
   ws['!cols'] = [{wch:24},{wch:40},{wch:42},{wch:34},{wch:30}];
   XLSX.utils.book_append_sheet(wb, ws, '工場情報');
-  const name = (factory['fname']||meta.target||meta.maker||'factory').toString().slice(0,20);
+  const name = safeName((factory['fname']||meta.target||meta.maker||'factory').toString().slice(0,20));
   XLSX.writeFile(wb, `PCB工場情報_${name}.xlsx`);
   toast('🏭','工場情報を出力しました');
 }
@@ -1532,7 +1537,17 @@ function doAddItem(){
 }
 
 // ══ EXPORT ══
+/* XLSXはCDN読み込みのため、オフライン起動時は未定義になり得る */
+function xlsxReady(){
+  if(typeof XLSX!=='undefined') return true;
+  toast('⚠️','Excel機能を読み込めていません（通信環境で再読み込みしてください）');
+  return false;
+}
+/* ファイル名に使えない文字を除去 */
+function safeName(s){ return String(s||'').replace(/[\\/:*?"<>|]/g,'_'); }
+
 function exportAll(){
+  if(!xlsxReady()) return;
   const wb=XLSX.utils.book_new(), procs=getProcs();
   let ok=0,ng=0,na=0;
   items.forEach(i=>{const s=S[i.no];if(s?.r==='ok')ok++;else if(s?.r==='ng')ng++;else if(s?.r==='na')na++;});
@@ -1567,10 +1582,11 @@ function exportAll(){
   const ws5=XLSX.utils.aoa_to_sheet(r5);
   ws5['!cols']=[{wch:24},{wch:40},{wch:42},{wch:34},{wch:30}];
   XLSX.utils.book_append_sheet(wb,ws5,'工場情報');
-  XLSX.writeFile(wb,`PCB監査_${meta.target||meta.maker||'report'}_${meta.date||'nodate'}.xlsx`);
+  XLSX.writeFile(wb,`PCB監査_${safeName(meta.target||meta.maker||'report')}_${meta.date||'nodate'}.xlsx`);
   toast('📊','Excelをダウンロードしました');
 }
 function exportNG(){
+  if(!xlsxReady()) return;
   const ng=items.filter(i=>S[i.no]?.r==='ng');
   if(!ng.length){ toast('ℹ️','NG項目がありません'); return; }
   const wb=XLSX.utils.book_new();
@@ -1590,10 +1606,11 @@ function exportNG(){
     ['メーカー名',meta.maker],['監査対象会社',meta.target],
     ['監査日',meta.date],['監査員',meta.auditor],['NG件数合計',ng.length]]);
   XLSX.utils.book_append_sheet(wb,wsc,'レポート情報');
-  XLSX.writeFile(wb,`PCB_NG報告_${meta.target||meta.maker||'report'}_${meta.date||'nodate'}.xlsx`);
+  XLSX.writeFile(wb,`PCB_NG報告_${safeName(meta.target||meta.maker||'report')}_${meta.date||'nodate'}.xlsx`);
   toast('🚨','NG報告書をダウンロードしました');
 }
 function exportOK(){
+  if(!xlsxReady()) return;
   const ok=okNoteItems();
   if(!ok.length){ toast('ℹ️','コメント・写真付きのOK項目がありません'); return; }
   const wb=XLSX.utils.book_new();
@@ -1607,7 +1624,7 @@ function exportOK(){
     ['メーカー名',meta.maker],['監査対象会社',meta.target],
     ['監査日',meta.date],['監査員',meta.auditor],['抽出件数',ok.length]]);
   XLSX.utils.book_append_sheet(wb,wsc,'レポート情報');
-  XLSX.writeFile(wb,`PCB_OK報告_${meta.target||meta.maker||'report'}_${meta.date||'nodate'}.xlsx`);
+  XLSX.writeFile(wb,`PCB_OK報告_${safeName(meta.target||meta.maker||'report')}_${meta.date||'nodate'}.xlsx`);
   toast('✅','OK一覧をダウンロードしました');
 }
 
@@ -1891,7 +1908,7 @@ function saveJSON(){
   const blob = new Blob([json], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  const fname = `PCB監査_${meta.target||meta.maker||'data'}_${(meta.date||'nodate').replace(/-/g,'')}.json`;
+  const fname = `PCB監査_${safeName(meta.target||meta.maker||'data')}_${(meta.date||'nodate').replace(/-/g,'')}.json`;
   a.href = url; a.download = fname; a.click();
   URL.revokeObjectURL(url);
   lsSave(); // LS にも保存
@@ -1963,16 +1980,14 @@ window.addEventListener('load',()=>{
   document.getElementById('drum-wrap').style.display='block';
   dPosition();
   dInit();
-  dBuild();
-  renderCheck();
-  updateProg();
 
-  // ── 起動時に保存データから復元（IndexedDBは非同期） ──
+  // ── 保存データを復元してから初回描画 ──
+  //（先に描画すると、復元完了までの入力が復元データで上書きされるため）
   lsLoad().then(restored=>{
+    dBuild();
+    renderCheckClean();
+    updateProg();
     if(restored){
-      dBuild();
-      renderCheckClean();
-      updateProg();
       try{ renderInfo(); }catch(e){}
       setStatus('ok','✅ 前回のデータを復元しました');
     } else {
