@@ -286,6 +286,24 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .fac-ex{margin-top:6px;font-size:11px;color:var(--t3);cursor:pointer;line-height:1.5;
   -webkit-user-select:none;user-select:none;}
 .fac-ex:active{color:var(--blue);}
+/* NGコメント未記入ヒント */
+.ci.ng .ci-cmt:placeholder-shown{border-left:2px solid rgba(240,82,82,.55);padding-left:8px;border-radius:2px;}
+/* スワイプ入力 */
+.ci{touch-action:pan-y;}
+/* 工程別スコア */
+.score-empty{font-size:12px;color:var(--t3);padding:6px 2px;}
+.score-svg{width:100%;max-width:320px;display:block;margin:0 auto 10px;}
+.score-row{display:flex;justify-content:space-between;align-items:center;background:var(--card);
+  border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:12px;}
+.score-val{font-weight:800;}
+/* バックアップ一覧 */
+.bak-row{display:flex;align-items:center;justify-content:space-between;background:var(--card2);
+  border:1px solid var(--border);border-radius:10px;padding:12px 13px;margin-bottom:8px;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.bak-row:active{border-color:var(--blue);}
+.bak-t{font-size:13px;font-weight:700;}
+.bak-s{font-size:11px;color:var(--t2);margin-top:2px;}
+.bak-go{font-size:12px;color:var(--blue);font-weight:700;flex-shrink:0;}
 .ok-exp{background:rgba(34,197,94,.12)!important;color:var(--green)!important;border-color:rgba(34,197,94,.28)!important;}
 .ok-item{border-left-color:var(--green)!important;}
 .ok-no{color:var(--green)!important;background:rgba(34,197,94,.12)!important;}
@@ -484,6 +502,10 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
       </div>
     </div>
     <div class="info-sec">
+      <div class="info-sec-t">📈 工程別スコア（OK率）</div>
+      <div id="score-body"></div>
+    </div>
+    <div class="info-sec">
       <div class="info-sec-t">工程別進捗</div>
       <div id="proc-sum"></div>
     </div>
@@ -513,6 +535,10 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
         <div class="exp-row" onclick="document.getElementById('load-input').click()">
           <div class="exp-ico" style="background:rgba(124,92,252,.13);">📂</div>
           <div><div class="exp-et">JSONファイルから読み込み</div><div class="exp-es">保存済みファイルを選択して復元</div></div>
+        </div>
+        <div class="exp-row" onclick="openBackups()">
+          <div class="exp-ico" style="background:rgba(245,158,11,.13);">🕘</div>
+          <div><div class="exp-et">バックアップから復元</div><div class="exp-es">起動時の自動バックアップ（最大5世代）</div></div>
         </div>
         <div class="exp-row" onclick="confirmClear()">
           <div class="exp-ico r">🗑</div>
@@ -620,6 +646,17 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   </div>
 </div>
 
+<!-- MODAL バックアップ復元 -->
+<div class="overlay" id="m-bak" onclick="overlayClick(event,'m-bak')">
+  <div class="sheet">
+    <div class="sh-hd"></div>
+    <div class="sh-title">🕘 バックアップから復元</div>
+    <div class="sh-sub">アプリ起動時に自動作成された世代（最大5件）</div>
+    <div class="sh-body" id="bak-list"></div>
+    <div class="sh-acts"><button class="sh-cancel" onclick="closeModal('m-bak')">閉じる</button></div>
+  </div>
+</div>
+
 <!-- hidden file input for photo (camera or library) -->
 <!-- capture属性を付けないことで「写真を撮る／ライブラリから選択」をiOSが選択可能に -->
 <input type="file" id="photo-input" accept="image/*" multiple
@@ -639,7 +676,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.2.1 (2026-06-25)';
+const APP_VERSION = 'v1.3.0 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1159,6 +1196,72 @@ function jumpUnanswered(){
   next.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
+/* スワイプ入力: 右=OK / 左=NG（カード上を横スワイプ） */
+function swipeInit(){
+  const body = document.getElementById('chk-body');
+  let sw = null;
+  body.addEventListener('touchstart', e=>{
+    const ci = e.target.closest('.ci');
+    if(!ci) return;
+    if(e.target.closest('textarea,button,input,.photo-row')) return;
+    const t = e.touches[0];
+    sw = {ci, x:t.clientX, y:t.clientY, dx:0, active:false};
+  },{passive:true});
+  body.addEventListener('touchmove', e=>{
+    if(!sw) return;
+    const t = e.touches[0];
+    const dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+    if(!sw.active){
+      if(Math.abs(dx)>14 && Math.abs(dx)>Math.abs(dy)*1.4) sw.active = true;
+      else if(Math.abs(dy)>12){ sw = null; return; }
+      else return;
+    }
+    sw.dx = Math.max(-110, Math.min(110, dx));
+    sw.ci.style.transition = 'none';
+    sw.ci.style.transform = `translateX(${sw.dx}px)`;
+    sw.ci.style.boxShadow = sw.dx>50 ? 'inset 5px 0 0 var(--green)'
+                          : sw.dx<-50 ? 'inset -5px 0 0 var(--red)' : '';
+  },{passive:true});
+  const end = ()=>{
+    if(!sw) return;
+    const {ci, dx} = sw;
+    ci.style.transition = 'transform .18s';
+    ci.style.transform = '';
+    ci.style.boxShadow = '';
+    if(sw.active){
+      const no = ci.id.replace('ci-','');
+      if(dx>70) swipeAnswer(no,'ok');
+      else if(dx<-70) swipeAnswer(no,'ng');
+    }
+    sw = null;
+  };
+  body.addEventListener('touchend', end, {passive:true});
+  body.addEventListener('touchcancel', ()=>{
+    if(sw){ sw.ci.style.transform=''; sw.ci.style.boxShadow=''; }
+    sw = null;
+  },{passive:true});
+}
+function swipeAnswer(no, r){
+  if(!S[no]) S[no]={};
+  if(S[no].r===r) return;      // 既に同じ結果ならトグル解除しない
+  S[no].r = '';                // setRのトグルを「必ずrにセット」として使う
+  setR(no, r);
+}
+
+/* 回答後、次の未回答項目へ自動スクロール（NGはコメント入力のためその場に留まる） */
+function autoAdvance(fromNo){
+  const els = [...document.querySelectorAll('#chk-body .ci')];
+  const idx = els.findIndex(el=>el.id==='ci-'+fromNo);
+  const order = idx>=0 ? els.slice(idx+1) : els;
+  const next = order.find(el=>!/\b(ok|ng|na)\b/.test(el.className));
+  if(next) next.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* コメント未記入のNG件数 */
+function ngNoCommentCount(){
+  return items.filter(i=>S[i.no]?.r==='ng' && !(S[i.no].c||'').trim()).length;
+}
+
 function setC(no,v){
   if(!S[no]) S[no]={};
   S[no].c = v;
@@ -1183,6 +1286,8 @@ function setR(no,r){
   scheduleAutoSave();
   // 「未回答のみ表示」中は回答した項目を即座にリストから消し、残り件数も更新
   if(chkUnansweredOnly && S[no].r) renderCheck();
+  // OK / N/A は次の未回答へ自動で進む（NGはコメント入力のため留まる）
+  if(S[no].r && S[no].r!=='ng') setTimeout(()=>autoAdvance(no), 180);
 }
 function delItem(no){
   if(!confirm('この項目を削除しますか？')) return;
@@ -1218,8 +1323,15 @@ function updateProg(){
 }
 
 // ══ TABS ══
+let curTab = 'check';
 function switchTab(tab){
   flushComments(); // タブ切り替え前にコメントを保存
+  // チェックタブを離れるとき、コメント未記入のNGがあれば知らせる
+  if(curTab==='check' && tab!=='check'){
+    const n = ngNoCommentCount();
+    if(n>0) toast('⚠️', `コメント未記入のNGが${n}件あります`);
+  }
+  curTab = tab;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+tab).classList.add('active');
@@ -1270,6 +1382,7 @@ function renderInfo(){
   document.getElementById('s-done').textContent  = ok+ng+na;
   document.getElementById('s-ok').textContent    = ok;
   document.getElementById('s-ng').textContent    = ng;
+  renderScore();
   document.getElementById('proc-sum').innerHTML  = getProcs().map(p=>{
     const s   = stat(p.items);
     const pct = s.total ? Math.round(s.done/s.total*100) : 0;
@@ -1289,6 +1402,41 @@ function renderInfo(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ══ 工程別スコア（OK率）＋レーダーチャート ══
+function renderScore(){
+  const el = document.getElementById('score-body');
+  if(!el) return;
+  const scored = getProcs().map(p=>{
+    const s = stat(p.items);
+    const judged = s.ok + s.ng;          // N/A・未回答は評価対象外
+    return {proc:p.proc, pn:p.pn, judged, score: judged ? Math.round(s.ok/judged*100) : null};
+  }).filter(p=>p.score!==null);
+  if(!scored.length){
+    el.innerHTML = '<div class="score-empty">OK / NG を入力すると工程別スコアが表示されます</div>';
+    return;
+  }
+  let svg = '';
+  if(scored.length>=3){
+    const cx=150, cy=125, R=88, N=scored.length;
+    const pt=(i,r)=>{ const a=-Math.PI/2 + i*2*Math.PI/N; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; };
+    const rings=[25,50,75,100].map(v=>
+      '<polygon points="'+scored.map((_,i)=>pt(i,R*v/100).map(n=>n.toFixed(1)).join(',')).join(' ')+'" fill="none" stroke="var(--border)" stroke-width="1"/>').join('');
+    const axes=scored.map((_,i)=>{ const [x,y]=pt(i,R); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`; }).join('');
+    const poly='<polygon points="'+scored.map((p,i)=>pt(i,R*p.score/100).map(n=>n.toFixed(1)).join(',')).join(' ')+'" fill="rgba(79,142,247,.28)" stroke="var(--blue)" stroke-width="2"/>';
+    const labels=scored.map((p,i)=>{ const [x,y]=pt(i,R+15);
+      return `<text x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--t2)">${esc(p.proc.replace('工程',''))}</text>`; }).join('');
+    svg = `<svg class="score-svg" viewBox="0 0 300 250">${rings}${axes}${poly}${labels}</svg>`;
+  }
+  const rows = scored.map(p=>{
+    const col = p.score>=90 ? 'var(--green)' : p.score>=70 ? 'var(--amber)' : 'var(--red)';
+    return `<div class="score-row">
+      <span>${ICONS[p.proc]||'🔧'} ${esc(p.proc)}　<span style="color:var(--t3)">${esc(p.pn)}</span></span>
+      <span class="score-val" style="color:${col}">${p.score}点 <span style="color:var(--t3);font-weight:600">(${p.judged}件)</span></span>
+    </div>`;
+  }).join('');
+  el.innerHTML = svg + rows;
 }
 
 // ══ NG ══
@@ -1571,9 +1719,9 @@ function exportAll(){
   const ws3=XLSX.utils.aoa_to_sheet(r3);
   ws3['!cols']=[{wch:8},{wch:8},{wch:20},{wch:22},{wch:16},{wch:55},{wch:40}];
   XLSX.utils.book_append_sheet(wb,ws3,'NG項目まとめ');
-  const r4=[['工程ID','工程名','総項目','OK','NG','N/A','未回答','完了率']];
-  procs.forEach(p=>{const s=stat(p.items);r4.push([p.proc,p.pn,s.total,s.ok,s.ng,s.na,
-    s.total-s.done,s.total?Math.round(s.done/s.total*100)+'%':'0%']);});
+  const r4=[['工程ID','工程名','総項目','OK','NG','N/A','未回答','完了率','スコア(OK率)']];
+  procs.forEach(p=>{const s=stat(p.items);const judged=s.ok+s.ng;r4.push([p.proc,p.pn,s.total,s.ok,s.ng,s.na,
+    s.total-s.done,s.total?Math.round(s.done/s.total*100)+'%':'0%',judged?Math.round(s.ok/judged*100)+'点':'']);});
   const ws4=XLSX.utils.aoa_to_sheet(r4);
   ws4['!cols']=[{wch:10},{wch:22},{wch:8},{wch:6},{wch:6},{wch:6},{wch:8},{wch:10}];
   XLSX.utils.book_append_sheet(wb,ws4,'工程別サマリー');
@@ -1787,30 +1935,88 @@ function idbOpen(){
     r.onerror  = ()=>rej(r.error);
   });
 }
-function idbSet(val){
+function idbSet(val, key){
   return idbOpen().then(db=>new Promise((res,rej)=>{
     const tx=db.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).put(val, IDB_KEY);
+    tx.objectStore(IDB_STORE).put(val, key||IDB_KEY);
     tx.oncomplete=()=>{ db.close(); res(true); };
     tx.onerror   =()=>{ db.close(); rej(tx.error); };
     tx.onabort   =()=>{ db.close(); rej(tx.error||new Error('abort')); };
   }));
 }
-function idbGet(){
+function idbGet(key){
   return idbOpen().then(db=>new Promise((res,rej)=>{
     const tx=db.transaction(IDB_STORE,'readonly');
-    const rq=tx.objectStore(IDB_STORE).get(IDB_KEY);
+    const rq=tx.objectStore(IDB_STORE).get(key||IDB_KEY);
     rq.onsuccess=()=>{ db.close(); res(rq.result||null); };
     rq.onerror  =()=>{ db.close(); rej(rq.error); };
   }));
 }
-function idbDel(){
+function idbDel(key){
   return idbOpen().then(db=>new Promise((res)=>{
     const tx=db.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).delete(IDB_KEY);
+    tx.objectStore(IDB_STORE).delete(key||IDB_KEY);
     tx.oncomplete=()=>{ db.close(); res(true); };
     tx.onerror   =()=>{ db.close(); res(false); };
   })).catch(()=>false);
+}
+function idbListBackups(){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const rq=tx.objectStore(IDB_STORE).getAllKeys();
+    rq.onsuccess=()=>{ db.close(); res((rq.result||[]).map(String).filter(k=>k.startsWith('bak_'))); };
+    rq.onerror  =()=>{ db.close(); rej(rq.error); };
+  })).catch(()=>[]);
+}
+
+// ══ 自動バックアップ（起動時に世代作成・最大5件保持） ══
+function makeBackup(){
+  const d = buildSaveData();
+  const hasData = Object.keys(d.S).length || Object.keys(d.factory).length ||
+    d.customItems.length || d.meta.target || d.meta.maker || d.meta.auditor || d.meta.comment;
+  if(!hasData) return Promise.resolve(false);
+  return idbSet(d, 'bak_'+Date.now()).then(()=>pruneBackups()).catch(()=>{});
+}
+function pruneBackups(){
+  return idbListBackups().then(keys=>{
+    keys.sort();
+    const excess = keys.slice(0, Math.max(0, keys.length-5));
+    return Promise.all(excess.map(k=>idbDel(k)));
+  });
+}
+function openBackups(){
+  document.getElementById('m-bak').classList.add('show');
+  const list = document.getElementById('bak-list');
+  list.innerHTML = '<div class="score-empty">読み込み中...</div>';
+  idbListBackups().then(async keys=>{
+    keys.sort().reverse();
+    const rows=[];
+    for(const k of keys){
+      const d = await idbGet(k).catch(()=>null);
+      if(!d) continue;
+      const done = Object.values(d.S||{}).filter(v=>v&&v.r).length;
+      const ph = Object.values(d.S||{}).reduce((a,v)=>a+((v&&v.photos)?v.photos.length:0),0);
+      const ts = new Date(+k.slice(4)).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      rows.push(`<div class="bak-row" onclick="restoreBackup('${k}')">
+        <div><div class="bak-t">${ts}</div>
+        <div class="bak-s">回答${done}件・写真${ph}枚${d.meta&&d.meta.target?('・'+esc(d.meta.target)):''}</div></div>
+        <div class="bak-go">復元 ›</div></div>`);
+    }
+    list.innerHTML = rows.join('') ||
+      '<div class="score-empty">バックアップはまだありません（データがある状態でアプリを起動すると自動作成されます）</div>';
+  });
+}
+function restoreBackup(key){
+  if(!confirm('このバックアップの内容に置き換えます。\n現在の入力は失われます。よろしいですか？')) return;
+  idbGet(key).then(d=>{
+    if(!d || !applySaveData(d)){ toast('⚠️','復元に失敗しました'); return; }
+    dBuild(); renderCheckClean(); updateProg();
+    try{ renderInfo(); }catch(e){}
+    lsSave();
+    closeModal('m-bak');
+    switchTab('check');
+    toast('🕘','バックアップを復元しました');
+  });
 }
 
 /* ── データを1つのオブジェクトに固める ── */
@@ -1943,6 +2149,7 @@ function loadJSON(e){
 /* ── リセット確認 ── */
 function confirmClear(){
   if(!confirm('全てのチェック結果・写真・コメント・工場情報を消去しますか？\nこの操作は元に戻せません。')) return;
+  makeBackup();   // 消去前に念のためバックアップ
   Object.keys(S).forEach(k=>delete S[k]);
   Object.keys(factory).forEach(k=>delete factory[k]);
   items = JSON.parse(JSON.stringify(BASE));
@@ -1980,6 +2187,7 @@ window.addEventListener('load',()=>{
   document.getElementById('drum-wrap').style.display='block';
   dPosition();
   dInit();
+  swipeInit();
 
   // ── 保存データを復元してから初回描画 ──
   //（先に描画すると、復元完了までの入力が復元データで上書きされるため）
@@ -1990,6 +2198,7 @@ window.addEventListener('load',()=>{
     if(restored){
       try{ renderInfo(); }catch(e){}
       setStatus('ok','✅ 前回のデータを復元しました');
+      makeBackup();   // 起動時に世代バックアップ（最大5件）
     } else {
       setStatus('','💾 自動保存：未保存');
     }
