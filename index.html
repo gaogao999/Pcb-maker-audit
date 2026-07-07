@@ -264,7 +264,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .fac-input:focus{border-color:var(--blue);}
 .fac-input::placeholder{color:var(--t3);}
 /* 入力支援 */
-.chk-tools{display:flex;gap:8px;padding:0 14px 4px;}
+.chk-tools{display:flex;gap:8px;padding:0 14px 4px;flex-wrap:wrap;}
 .tool-btn{flex:none;padding:7px 12px;border-radius:99px;border:1px solid var(--border);
   background:var(--card);color:var(--t2);font-size:11px;font-weight:700;cursor:pointer;
   -webkit-user-select:none;user-select:none;}
@@ -304,6 +304,52 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .bak-t{font-size:13px;font-weight:700;}
 .bak-s{font-size:11px;color:var(--t2);margin-top:2px;}
 .bak-go{font-size:12px;color:var(--blue);font-weight:700;flex-shrink:0;}
+/* ウィザード入力 */
+.wiz{display:none;position:fixed;inset:0;z-index:450;background:var(--bg);
+  flex-direction:column;}
+.wiz.show{display:flex;}
+.wiz-top{display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--safe-top) + 10px) 14px 8px;}
+.wiz-close{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);
+  background:var(--card);color:var(--t2);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.wiz-prog-t{font-size:13px;font-weight:700;color:var(--t2);}
+.wiz-bar{height:3px;background:var(--border);margin:0 14px;border-radius:99px;overflow:hidden;}
+.wiz-bar-f{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));
+  border-radius:99px;transition:width .25s;}
+.wiz-body{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;}
+.wiz-body::-webkit-scrollbar{display:none;}
+.wiz-card{position:relative;background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:18px 16px;will-change:transform;touch-action:pan-y;}
+.wiz-hint{position:absolute;top:14px;font-size:15px;font-weight:800;opacity:0;
+  padding:6px 12px;border-radius:9px;pointer-events:none;transition:opacity .1s;}
+.wiz-hint.ok{left:12px;color:var(--green);background:rgba(34,197,94,.15);border:1.5px solid var(--green);}
+.wiz-hint.ng{right:12px;color:var(--red);background:rgba(240,82,82,.15);border:1.5px solid var(--red);}
+.wiz-no{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:10px;}
+.wiz-no b{color:var(--blue);background:rgba(79,142,247,.12);padding:2px 7px;border-radius:5px;margin-right:6px;}
+.wiz-q{font-size:17px;line-height:1.65;font-weight:600;margin-bottom:16px;}
+.wiz-btns{display:flex;gap:8px;margin-bottom:6px;}
+.wiz-b{flex:1;padding:13px 4px;border-radius:11px;border:1px solid var(--border);
+  background:var(--card2);color:var(--t3);font-size:14px;font-weight:800;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.wiz-b.ok.sel{background:rgba(34,197,94,.15);color:var(--green);border-color:var(--green);}
+.wiz-b.ng.sel{background:rgba(240,82,82,.15);color:var(--red);border-color:var(--red);}
+.wiz-b.na.sel{background:rgba(74,80,112,.25);color:var(--t2);border-color:var(--t2);}
+.wiz-cmt-wrap{margin-top:12px;border-top:1px solid var(--border);padding-top:11px;}
+.wiz-cmt{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;
+  color:var(--text);font-size:14px;font-family:inherit;padding:9px 11px;outline:none;
+  resize:none;line-height:1.5;min-height:60px;}
+.wiz-cmt:focus{border-color:var(--blue);}
+.wiz-cmt::placeholder{color:var(--t3);}
+.wiz-photos{margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;}
+.wiz-swipe-hint{text-align:center;font-size:11px;color:var(--t3);margin-top:14px;line-height:1.7;}
+.wiz-nav{display:flex;gap:9px;padding:8px 14px calc(min(var(--safe-bot),16px) + 10px);}
+.wiz-nb{flex:1;padding:12px;border-radius:11px;border:1px solid var(--border);
+  background:var(--card);color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.wiz-nb:active{border-color:var(--blue);color:var(--blue);}
+.wiz-done{text-align:center;padding:50px 20px;color:var(--t2);font-size:15px;line-height:1.8;}
+.wiz-done-ic{font-size:52px;margin-bottom:14px;}
 .ok-exp{background:rgba(34,197,94,.12)!important;color:var(--green)!important;border-color:rgba(34,197,94,.28)!important;}
 .ok-item{border-left-color:var(--green)!important;}
 .ok-no{color:var(--green)!important;background:rgba(34,197,94,.12)!important;}
@@ -447,6 +493,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   <div class="chk-tools">
     <button class="tool-btn" id="flt-unans" onclick="toggleChkFilter()">未回答のみ表示</button>
     <button class="tool-btn" onclick="jumpUnanswered()">⬇ 次の未回答へ</button>
+    <button class="tool-btn" onclick="wizStart()">🪄 ウィザード入力</button>
   </div>
   <div id="chk-body"></div>
 </div>
@@ -646,6 +693,21 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   </div>
 </div>
 
+<!-- ウィザード入力 -->
+<div class="wiz" id="wizard">
+  <div class="wiz-top">
+    <button class="wiz-close" onclick="wizClose()">✕</button>
+    <div class="wiz-prog-t" id="wiz-prog-t"></div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="wiz-bar"><div class="wiz-bar-f" id="wiz-bar-f" style="width:0%"></div></div>
+  <div class="wiz-body" id="wiz-body"></div>
+  <div class="wiz-nav">
+    <button class="wiz-nb" onclick="wizPrev()">‹ 前へ</button>
+    <button class="wiz-nb" onclick="wizSkip()">スキップ ›</button>
+  </div>
+</div>
+
 <!-- MODAL バックアップ復元 -->
 <div class="overlay" id="m-bak" onclick="overlayClick(event,'m-bak')">
   <div class="sheet">
@@ -676,7 +738,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.3.0 (2026-06-25)';
+const APP_VERSION = 'v1.4.0 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1262,6 +1324,184 @@ function ngNoCommentCount(){
   return items.filter(i=>S[i.no]?.r==='ng' && !(S[i.no].c||'').trim()).length;
 }
 
+// ══ ウィザード入力（1問ずつ・スワイプで回答） ══
+const wiz = {list:[], idx:0};
+function wizOpen(){ return document.getElementById('wizard').classList.contains('show'); }
+function wizStart(){
+  flushComments();
+  const p = getProcs()[dIdx]; if(!p) return;
+  wiz.list = p.items.map(i=>i.no);
+  wiz.idx  = Math.max(0, wiz.list.findIndex(no=>!S[no]?.r));
+  document.getElementById('wizard').classList.add('show');
+  wizRender();
+}
+function wizClose(){
+  document.getElementById('wizard').classList.remove('show');
+  renderCheck(); updateProg(); dUpdateLabels();
+}
+function wizItem(){ return items.find(i=>i.no===wiz.list[wiz.idx]); }
+function wizProgress(){
+  const total = wiz.list.length;
+  const done  = wiz.list.filter(no=>S[no]?.r).length;
+  const p = getProcs()[dIdx];
+  document.getElementById('wiz-prog-t').textContent = `${p?p.proc:''}　${done}/${total}`;
+  document.getElementById('wiz-bar-f').style.width = (total?Math.round(done/total*100):0)+'%';
+}
+function wizRender(){
+  wizProgress();
+  const it = wizItem();
+  const body = document.getElementById('wiz-body');
+  if(!it){ wizDone(); return; }
+  const sv = S[it.no]||{};
+  const r  = sv.r||'';
+  const photos = sv.photos||[];
+  body.innerHTML = `
+    <div class="wiz-card" id="wiz-card">
+      <div class="wiz-hint ok">✅ OK</div>
+      <div class="wiz-hint ng">❌ NG</div>
+      <div class="wiz-no"><b>${esc(it.no)}</b>${esc(it.sub)}　／　${esc(it.cp)}</div>
+      <div class="wiz-q">${esc(it.q)}</div>
+      <div class="wiz-btns">
+        <button class="wiz-b ok${r==='ok'?' sel':''}" onclick="wizAnswer('ok')">✅ OK</button>
+        <button class="wiz-b ng${r==='ng'?' sel':''}" onclick="wizAnswer('ng')">❌ NG</button>
+        <button class="wiz-b na${r==='na'?' sel':''}" onclick="wizAnswer('na')">— N/A</button>
+      </div>
+      ${(r==='ok'||r==='ng')?`
+      <div class="wiz-cmt-wrap">
+        <div class="qc-chips">${QC_PHRASES.map(t=>`<button class="qc-chip" onclick="wizQC('${t}')">${t}</button>`).join('')}</div>
+        <textarea class="wiz-cmt" id="wz-cmt" placeholder="コメントを入力..."
+          oninput="setC('${it.no}',this.value)">${esc(sv.c||'')}</textarea>
+        <div class="wiz-photos">
+          ${photos.map((ph,pi)=>`
+            <div class="photo-thumb" onclick="openLB('${it.no}',${pi})">
+              <img src="${ph}" alt="">
+              <button class="photo-del" onclick="event.stopPropagation();delPhoto('${it.no}',${pi})">✕</button>
+            </div>`).join('')}
+          <button class="photo-add" onclick="triggerPhoto('${it.no}')"><span class="pi">📷</span>追加</button>
+        </div>
+      </div>`:''}
+    </div>
+    <div class="wiz-swipe-hint">カードを右へスワイプ ＝ ✅ OK<br>カードを左へスワイプ ＝ ❌ NG</div>`;
+}
+function wizQC(t){
+  const ta = document.getElementById('wz-cmt');
+  if(!ta) return;
+  ta.value = ta.value.trim() ? ta.value.replace(/\s+$/,'')+'、'+t : t;
+  setC(wiz.list[wiz.idx], ta.value);
+}
+function wizAnswer(r){
+  const no = wiz.list[wiz.idx];
+  if(!S[no]) S[no]={};
+  S[no].r = r;
+  updateProg(); dUpdateLabels(); scheduleAutoSave();
+  if(r==='ng'){ wizRender(); }        // NGはコメント記入のため留まる
+  else setTimeout(wizNext, 120);
+}
+function wizNext(){
+  const L = wiz.list;
+  for(let k=wiz.idx+1;k<L.length;k++){ if(!S[L[k]]?.r){ wiz.idx=k; wizRender(); return; } }
+  for(let k=0;k<=wiz.idx && k<L.length;k++){ if(!S[L[k]]?.r){ wiz.idx=k; wizRender(); return; } }
+  wizDone();
+}
+function wizSkip(){
+  if(wiz.idx < wiz.list.length-1){ wiz.idx++; wizRender(); }
+  else wizNext();
+}
+function wizPrev(){
+  if(wiz.idx>0){ wiz.idx--; wizRender(); }
+}
+function wizDone(){
+  wizProgress();
+  const L = wiz.list;
+  const ok = L.filter(no=>S[no]?.r==='ok').length;
+  const ng = L.filter(no=>S[no]?.r==='ng').length;
+  const na = L.filter(no=>S[no]?.r==='na').length;
+  document.getElementById('wiz-body').innerHTML = `
+    <div class="wiz-done">
+      <div class="wiz-done-ic">🎉</div>
+      この工程のチェックが完了しました<br>
+      <b style="color:var(--green)">✅ ${ok}</b>　<b style="color:var(--red)">❌ ${ng}</b>　<b style="color:var(--t2)">— ${na}</b><br><br>
+      <button class="wiz-nb" style="max-width:220px" onclick="wizClose()">リストに戻る</button>
+    </div>`;
+}
+/* ウィザードカードのスワイプ（右=OK / 左=NG） */
+function wizSwipeInit(){
+  const body = document.getElementById('wiz-body');
+  let s = null;
+  body.addEventListener('touchstart', e=>{
+    const card = e.target.closest('.wiz-card');
+    if(!card) return;
+    if(e.target.closest('textarea,button,input,.wiz-photos')) return;
+    const t = e.touches[0];
+    s = {card, x:t.clientX, y:t.clientY, dx:0, active:false};
+  },{passive:true});
+  body.addEventListener('touchmove', e=>{
+    if(!s) return;
+    const t = e.touches[0];
+    const dx = t.clientX - s.x, dy = t.clientY - s.y;
+    if(!s.active){
+      if(Math.abs(dx)>12 && Math.abs(dx)>Math.abs(dy)*1.3) s.active = true;
+      else if(Math.abs(dy)>14){ s = null; return; }
+      else return;
+    }
+    s.dx = dx;
+    s.card.style.transition = 'none';
+    s.card.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
+    const hOk = s.card.querySelector('.wiz-hint.ok');
+    const hNg = s.card.querySelector('.wiz-hint.ng');
+    if(hOk) hOk.style.opacity = Math.max(0, Math.min(1, dx/90));
+    if(hNg) hNg.style.opacity = Math.max(0, Math.min(1, -dx/90));
+  },{passive:true});
+  const end = ()=>{
+    if(!s) return;
+    const {card, dx, active} = s;
+    s = null;
+    if(active && Math.abs(dx)>80){
+      const r = dx>0 ? 'ok' : 'ng';
+      card.style.transition = 'transform .22s, opacity .22s';
+      card.style.transform = `translateX(${dx>0?480:-480}px) rotate(${dx>0?16:-16}deg)`;
+      card.style.opacity = '0';
+      setTimeout(()=>wizAnswer(r), 200);
+    } else {
+      card.style.transition = 'transform .18s';
+      card.style.transform = '';
+      ['.wiz-hint.ok','.wiz-hint.ng'].forEach(q=>{ const h=card.querySelector(q); if(h) h.style.opacity=0; });
+    }
+  };
+  body.addEventListener('touchend', end, {passive:true});
+  body.addEventListener('touchcancel', end, {passive:true});
+}
+
+// ══ タブのスワイプ移動（カード・ドラム・モーダル以外の余白を横スワイプ） ══
+const TAB_ORDER = ['check','ng','ok','fac','info'];
+function tabSwipeInit(){
+  let ts = null;
+  document.addEventListener('touchstart', e=>{
+    if(e.target.closest('.ci,.drum-inner,.overlay,.lightbox,.wiz,textarea,input,button,select,.photo-row')){ ts=null; return; }
+    const t = e.touches[0];
+    ts = {x:t.clientX, y:t.clientY, dx:0, active:false};
+  },{passive:true});
+  document.addEventListener('touchmove', e=>{
+    if(!ts) return;
+    const t = e.touches[0];
+    const dx = t.clientX - ts.x, dy = t.clientY - ts.y;
+    if(!ts.active){
+      if(Math.abs(dx)>24 && Math.abs(dx)>Math.abs(dy)*1.6) ts.active = true;
+      else if(Math.abs(dy)>14){ ts = null; return; }
+      else return;
+    }
+    ts.dx = dx;
+  },{passive:true});
+  document.addEventListener('touchend', ()=>{
+    if(ts && ts.active && Math.abs(ts.dx)>60){
+      const i = TAB_ORDER.indexOf(curTab);
+      const ni = ts.dx<0 ? Math.min(TAB_ORDER.length-1, i+1) : Math.max(0, i-1);
+      if(ni!==i) switchTab(TAB_ORDER[ni]);
+    }
+    ts = null;
+  },{passive:true});
+}
+
 function setC(no,v){
   if(!S[no]) S[no]={};
   S[no].c = v;
@@ -1828,6 +2068,7 @@ function onPhotoSelected(e){
     loaded++;
     if(loaded===files.length){
       refreshPhotoBar(no);
+      if(wizOpen()) wizRender();
       updateProg();   // OK一覧バッジ等の更新
       scheduleAutoSave();
       if(added>0) toast('📷', `写真を${added}枚追加しました`);
@@ -1867,6 +2108,7 @@ function delPhoto(no, idx){
   if(!S[no]?.photos) return;
   S[no].photos.splice(idx,1);
   refreshPhotoBar(no);
+  if(wizOpen()) wizRender();
   updateProg();
   scheduleAutoSave();
   // close lightbox if open on deleted photo
@@ -2188,6 +2430,8 @@ window.addEventListener('load',()=>{
   dPosition();
   dInit();
   swipeInit();
+  wizSwipeInit();
+  tabSwipeInit();
 
   // ── 保存データを復元してから初回描画 ──
   //（先に描画すると、復元完了までの入力が復元データで上書きされるため）
