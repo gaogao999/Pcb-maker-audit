@@ -272,7 +272,10 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .tool-btn:active{opacity:.7;}
 .sub-ok{font-size:11px;color:var(--t3);background:none;border:none;cursor:pointer;margin-right:10px;}
 .sub-ok:active{color:var(--green);}
-.qc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+.qc-chips{display:flex;gap:6px;margin-bottom:7px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;padding-bottom:2px;}
+.qc-chips::-webkit-scrollbar{display:none;}
+.qc-chip{flex:0 0 auto;}
 .qc-chip{padding:5px 10px;border-radius:99px;border:1px solid var(--border);
   background:var(--card2);color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;
   -webkit-user-select:none;user-select:none;}
@@ -762,7 +765,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.4.4 (2026-06-25)';
+const APP_VERSION = 'v1.4.5 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1244,7 +1247,7 @@ function renderCheckClean(){
 }
 
 // ══ 入力支援（チェックタブ） ══
-const QC_PHRASES = ['問題なし','記録確認済み','現場確認済み','要改善','是正依頼','次回フォロー'];
+const QC_PHRASES = ['要改善','是正依頼','次回フォロー','確認済み'];
 let chkUnansweredOnly = false;
 
 function toggleChkFilter(){
