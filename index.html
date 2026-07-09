@@ -289,6 +289,11 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .fac-ex{margin-top:6px;font-size:11px;color:var(--t3);cursor:pointer;line-height:1.5;
   -webkit-user-select:none;user-select:none;}
 .fac-ex:active{color:var(--blue);}
+/* 工場情報 閲覧モード */
+.fv-row{padding:9px 0;border-bottom:1px solid var(--border);}
+.fv-row:last-child{border-bottom:none;}
+.fv-l{font-size:10px;font-weight:700;color:var(--t3);margin-bottom:3px;line-height:1.4;}
+.fv-v{font-size:14px;line-height:1.55;word-break:break-word;}
 /* NGコメント未記入ヒント */
 .ci.ng .ci-cmt:placeholder-shown{border-left:2px solid rgba(240,82,82,.55);padding-left:8px;border-radius:2px;}
 /* スワイプ入力 */
@@ -566,6 +571,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
     <button class="ng-exp fac-exp" onclick="exportFactory()">📥 Excel出力</button>
   </div>
   <div class="fac-tools">
+    <button class="tool-btn" id="fac-view-btn" onclick="toggleFacView()">👁 閲覧モード</button>
     <button class="tool-btn" id="flt-unfilled" onclick="toggleFacFilter()">未入力のみ表示</button>
   </div>
   <div id="fac-body"></div>
@@ -797,7 +803,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.5.0 (2026-06-25)';
+const APP_VERSION = 'v1.5.1 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1845,6 +1851,42 @@ function toggleFacFilter(){
   document.getElementById('flt-unfilled').classList.toggle('on', facUnfilledOnly);
   renderFactory();
 }
+let facViewMode = false;
+function toggleFacView(){
+  facViewMode = !facViewMode;
+  document.getElementById('fac-view-btn').classList.toggle('on', facViewMode);
+  // 閲覧モード中は「未入力のみ」ボタンを無効化表示
+  document.getElementById('flt-unfilled').style.display = facViewMode ? 'none' : '';
+  renderFactory();
+}
+/* 入力済みの項目だけを読みやすく一覧表示 */
+function renderFactoryView(body){
+  const groups = {};
+  FACTORY_ITEMS.forEach(it=>{
+    const v = (factory[it.id]||'').trim();
+    if(!v) return;
+    (groups[it.cat] = groups[it.cat]||[]).push({it, v});
+  });
+  const cats = Object.entries(groups);
+  if(!cats.length){
+    body.innerHTML = '<div class="ng-empty"><div class="ng-eic">📋</div>まだ入力された工場情報がありません<br>閲覧モードを解除して入力してください</div>';
+    return;
+  }
+  body.innerHTML = cats.map(([cat,rows])=>`
+    <div class="fac-sec open">
+      <div class="fac-head" style="cursor:default">
+        <span class="fac-head-t">${esc(cat)}</span>
+        <span class="fac-head-meta"><span class="fac-count done">${rows.length}件</span></span>
+      </div>
+      <div class="fac-items" style="display:block;padding-bottom:4px">
+        ${rows.map(({it,v})=>`
+          <div class="fv-row">
+            <div class="fv-l">${esc(it.label)}${it.hint?`　<span style="font-weight:500">${esc(it.hint)}</span>`:''}</div>
+            <div class="fv-v">${esc(v)}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
 /* 可/不可・有り/無し系はワンタップ選択肢を出す */
 function facChoices(it){
   const ex = (it.ex||'').trim();
@@ -1872,6 +1914,7 @@ function useFacEx(id){
 function renderFactory(){
   const body = document.getElementById('fac-body');
   if(!body) return;
+  if(facViewMode){ renderFactoryView(body); return; }
   const groups = {};
   FACTORY_ITEMS.forEach(it=>{ (groups[it.cat] = groups[it.cat]||[]).push(it); });
   const out = Object.entries(groups).map(([cat,arr],idx)=>{
