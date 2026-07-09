@@ -312,6 +312,30 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .bak-t{font-size:13px;font-weight:700;}
 .bak-s{font-size:11px;color:var(--t2);margin-top:2px;}
 .bak-go{font-size:12px;color:var(--blue);font-weight:700;flex-shrink:0;}
+/* メーカーDB */
+.mdb{display:none;position:fixed;inset:0;z-index:460;background:var(--bg);flex-direction:column;}
+.mdb.show{display:flex;}
+.mdb-top{display:flex;align-items:center;gap:10px;
+  padding:calc(var(--safe-top) + 10px) 14px 10px;}
+.mdb-title{font-size:16px;font-weight:800;flex:1;}
+.mdb-search{margin:0 14px 10px;display:flex;}
+.mdb-search input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-size:14px;font-family:inherit;padding:10px 13px;outline:none;}
+.mdb-search input:focus{border-color:var(--blue);}
+.mdb-body{flex:1;overflow-y:auto;padding:0 14px calc(var(--safe-bot) + 20px);}
+.mdb-body::-webkit-scrollbar{display:none;}
+.mdb-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:13px 14px;margin-bottom:9px;}
+.mdb-name{font-size:15px;font-weight:800;}
+.mdb-meta{font-size:11px;color:var(--t2);margin-top:3px;}
+.mdb-stats{display:flex;gap:12px;margin-top:7px;font-size:12px;font-weight:700;}
+.mdb-acts{display:flex;gap:8px;margin-top:10px;}
+.mdb-act{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border);
+  background:var(--card2);color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;
+  -webkit-user-select:none;user-select:none;}
+.mdb-act.open{color:var(--blue);border-color:rgba(79,142,247,.4);}
+.mdb-act.del{color:var(--red);border-color:rgba(240,82,82,.3);flex:0 0 auto;padding:9px 13px;}
+.mdb-act:active{opacity:.7;}
 /* ウィザード入力 */
 .wiz{display:none;position:fixed;inset:0;z-index:450;background:var(--bg);
   flex-direction:column;}
@@ -622,6 +646,19 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
       </div>
     </div>
     <div class="info-sec">
+      <div class="info-sec-t">🗄 メーカーDB</div>
+      <div class="exp-card">
+        <div class="exp-row" onclick="saveMakerDB()">
+          <div class="exp-ico" style="background:rgba(79,142,247,.13);">📥</div>
+          <div><div class="exp-et">現在の監査をDBに登録</div><div class="exp-es">会社名で保存（同名は上書き更新）</div></div>
+        </div>
+        <div class="exp-row" onclick="openMakerDB()">
+          <div class="exp-ico" style="background:rgba(124,92,252,.13);">🗄</div>
+          <div><div class="exp-et">メーカーDB一覧</div><div class="exp-es">保存済みメーカーの閲覧・呼び出し・Excel出力</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="info-sec">
       <div class="info-sec-t">💾 データ保存・読み込み</div>
       <div class="save-status-bar" id="save-status-bar">
         <span id="save-status-txt">💾 自動保存：未保存</span>
@@ -760,6 +797,17 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   </div>
 </div>
 
+<!-- メーカーDB一覧 -->
+<div class="mdb" id="mdb">
+  <div class="mdb-top">
+    <button class="wiz-close" onclick="closeMakerDB()">✕</button>
+    <div class="mdb-title">🗄 メーカーDB</div>
+    <button class="ng-exp fac-exp" onclick="exportMakerDB()">📥 Excel</button>
+  </div>
+  <div class="mdb-search"><input id="mdb-q" placeholder="会社名で検索..." oninput="renderMakerDB()"></div>
+  <div class="mdb-body" id="mdb-body"></div>
+</div>
+
 <!-- MODAL バックアップ復元 -->
 <div class="overlay" id="m-bak" onclick="overlayClick(event,'m-bak')">
   <div class="sheet">
@@ -803,7 +851,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.5.1 (2026-06-25)';
+const APP_VERSION = 'v1.6.0 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1417,7 +1465,8 @@ function wizClose(){
     if(idx>=0 && idx!==dIdx){ dIdx=idx; dBuild(); }
   }
   document.getElementById('wizard').classList.remove('show');
-  renderCheck(); updateProg(); dUpdateLabels();
+  // 裏のチェックリストに残った古いコメント欄をflushさせない（ウィザードでの編集を保護）
+  renderCheckClean(); updateProg(); dUpdateLabels();
 }
 function wizItem(){ return items.find(i=>i.no===wiz.list[wiz.idx]); }
 function wizProgress(){
@@ -2418,13 +2467,126 @@ function idbDel(key){
     tx.onerror   =()=>{ db.close(); res(false); };
   })).catch(()=>false);
 }
-function idbListBackups(){
+function idbListKeys(prefix){
   return idbOpen().then(db=>new Promise((res,rej)=>{
     const tx=db.transaction(IDB_STORE,'readonly');
     const rq=tx.objectStore(IDB_STORE).getAllKeys();
-    rq.onsuccess=()=>{ db.close(); res((rq.result||[]).map(String).filter(k=>k.startsWith('bak_'))); };
+    rq.onsuccess=()=>{ db.close(); res((rq.result||[]).map(String).filter(k=>k.startsWith(prefix))); };
     rq.onerror  =()=>{ db.close(); rej(rq.error); };
   })).catch(()=>[]);
+}
+function idbListBackups(){ return idbListKeys('bak_'); }
+
+// ══ メーカーDB（訪問した基板メーカーの監査データを蓄積） ══
+function makerName(){
+  return (meta.target || factory['fname'] || meta.maker || '').trim();
+}
+function makerSummary(){
+  let ok=0,ng=0,na=0,ph=0;
+  items.forEach(i=>{ const s=S[i.no]; if(s?.r==='ok')ok++; else if(s?.r==='ng')ng++; else if(s?.r==='na')na++; });
+  Object.values(S).forEach(v=>{ ph += (v&&v.photos)?v.photos.length:0; });
+  const judged=ok+ng;
+  return { name:makerName()||'名称未設定', date:meta.date||'', auditor:meta.auditor||'',
+    total:items.length, ok, ng, na, photos:ph,
+    score: judged?Math.round(ok/judged*100):null,
+    facFilled: FACTORY_ITEMS.filter(it=>(factory[it.id]||'').trim()).length,
+    savedAt: new Date().toISOString() };
+}
+async function saveMakerDB(){
+  flushComments();
+  const name = makerName();
+  if(!name){ toast('⚠️','会社名（監査対象会社）を入力してください'); switchTab('info'); return; }
+  // 同名エントリがあれば上書き
+  const keys = await idbListKeys('mk_');
+  let key = null;
+  for(const k of keys){
+    const e = await idbGet(k).catch(()=>null);
+    if(e && e.summary && e.summary.name===name){ key=k; break; }
+  }
+  if(key && !confirm(`「${name}」は登録済みです。上書き更新しますか？`)) return;
+  if(!key) key = 'mk_'+Date.now();
+  const entry = { summary: makerSummary(), data: buildSaveData() };
+  idbSet(entry, key).then(()=>{
+    toast('🗄', `「${name}」をDBに${keys.includes(key)?'更新':'登録'}しました`);
+  }).catch(()=>toast('⚠️','DBへの保存に失敗しました'));
+}
+let mdbCache = [];   // [{key, summary}]
+function openMakerDB(){
+  document.getElementById('mdb').classList.add('show');
+  document.getElementById('mdb-q').value='';
+  document.getElementById('mdb-body').innerHTML='<div class="ng-empty">読み込み中...</div>';
+  idbListKeys('mk_').then(async keys=>{
+    mdbCache = [];
+    for(const k of keys.sort().reverse()){
+      const e = await idbGet(k).catch(()=>null);
+      if(e && e.summary) mdbCache.push({key:k, summary:e.summary});
+    }
+    mdbCache.sort((a,b)=>(b.summary.date||'').localeCompare(a.summary.date||''));
+    renderMakerDB();
+  });
+}
+function closeMakerDB(){ document.getElementById('mdb').classList.remove('show'); }
+function renderMakerDB(){
+  const q = (document.getElementById('mdb-q').value||'').trim().toLowerCase();
+  const list = mdbCache.filter(e=>!q || e.summary.name.toLowerCase().includes(q));
+  const body = document.getElementById('mdb-body');
+  if(!list.length){
+    body.innerHTML = `<div class="ng-empty"><div class="ng-eic">🗄</div>${q?'該当するメーカーがありません':'まだ登録がありません<br>情報タブ →「現在の監査をDBに登録」で追加できます'}</div>`;
+    return;
+  }
+  body.innerHTML = list.map(({key,summary:s})=>{
+    const sc = s.score!==null&&s.score!==undefined ? s.score : null;
+    const scCol = sc===null?'var(--t3)': sc>=90?'var(--green)': sc>=70?'var(--amber)':'var(--red)';
+    return `<div class="mdb-row">
+      <div class="mdb-name">${esc(s.name)}</div>
+      <div class="mdb-meta">${esc(s.date||'日付未設定')}${s.auditor?('　監査員: '+esc(s.auditor)):''}　工場情報 ${s.facFilled||0}件</div>
+      <div class="mdb-stats">
+        <span style="color:var(--green)">✅ ${s.ok}</span>
+        <span style="color:${s.ng>0?'var(--red)':'var(--t3)'}">❌ ${s.ng}</span>
+        <span style="color:var(--t3)">📷 ${s.photos}</span>
+        <span style="color:${scCol}">${sc===null?'スコア未':'スコア '+sc+'点'}</span>
+      </div>
+      <div class="mdb-acts">
+        <button class="mdb-act open" onclick="loadMaker('${key}')">📂 この監査を開く</button>
+        <button class="mdb-act del" onclick="delMaker('${key}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function loadMaker(key){
+  if(!confirm('この監査データを開きます。\n現在の入力内容は自動バックアップに退避されます。よろしいですか？')) return;
+  makeBackup();
+  idbGet(key).then(e=>{
+    if(!e || !e.data || !applySaveData(e.data)){ toast('⚠️','読み込みに失敗しました'); return; }
+    dBuild(); renderCheckClean(); updateProg();
+    try{ renderInfo(); }catch(err){}
+    lsSave();
+    closeMakerDB();
+    switchTab('check');
+    toast('📂', `「${e.summary?.name||''}」を開きました`);
+  });
+}
+function delMaker(key){
+  const e = mdbCache.find(x=>x.key===key);
+  if(!confirm(`「${e?e.summary.name:''}」をDBから削除しますか？`)) return;
+  idbDel(key).then(()=>{
+    mdbCache = mdbCache.filter(x=>x.key!==key);
+    renderMakerDB();
+    toast('🗑','削除しました');
+  });
+}
+function exportMakerDB(){
+  if(!xlsxReady()) return;
+  if(!mdbCache.length){ toast('ℹ️','登録がありません'); return; }
+  const wb = XLSX.utils.book_new();
+  const r = [['会社名','監査日','監査員','総項目','OK','NG','N/A','スコア(OK率)','写真枚数','工場情報件数','登録日時']];
+  mdbCache.forEach(({summary:s})=>r.push([s.name,s.date,s.auditor,s.total,s.ok,s.ng,s.na,
+    (s.score!==null&&s.score!==undefined)?s.score+'点':'', s.photos, s.facFilled||0, (s.savedAt||'').slice(0,16).replace('T',' ')]));
+  const ws = XLSX.utils.aoa_to_sheet(r);
+  ws['!cols']=[{wch:24},{wch:12},{wch:10},{wch:8},{wch:6},{wch:6},{wch:6},{wch:12},{wch:8},{wch:12},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws, 'メーカーDB');
+  XLSX.writeFile(wb, 'PCBメーカーDB一覧.xlsx');
+  toast('🗄','メーカーDBを出力しました');
 }
 
 // ══ 自動バックアップ（起動時に世代作成・最大5件保持） ══
