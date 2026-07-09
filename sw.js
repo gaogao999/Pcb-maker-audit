@@ -1,6 +1,6 @@
 // Network-first service worker: always show the latest when online,
 // fall back to cache when offline so the app + Excel export work with no signal.
-const CACHE = 'pcb-audit-v5';
+const CACHE = 'pcb-audit-v6';
 const ASSETS = [
   './',
   './index.html',

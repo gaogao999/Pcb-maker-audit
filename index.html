@@ -123,7 +123,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   padding-top:calc(var(--safe-top) + 56px + 132px);
   padding-bottom:calc(min(var(--safe-bot), 18px) + 96px);
 }
-#sc-ng,#sc-info,#sc-ok,#sc-fac{
+#sc-ng,#sc-info,#sc-ok{
   padding-top:calc(var(--safe-top) + 58px);
   padding-bottom:calc(min(var(--safe-bot), 18px) + 40px);
 }
@@ -241,28 +241,6 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .ng-cml{font-size:9px;color:var(--t3);margin-bottom:2px;font-weight:700;}
 /* OK一覧（NGのレイアウトを流用し緑系に） */
 .bnav-badge.ok-badge{background:var(--green);}
-/* 工場情報フォーム（大項目アコーディオン） */
-.fac-exp{background:rgba(79,142,247,.12)!important;color:var(--blue)!important;border-color:rgba(79,142,247,.28)!important;}
-.fac-sec{margin:0 14px 8px;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r);overflow:hidden;}
-.fac-head{display:flex;align-items:center;justify-content:space-between;
-  padding:14px;cursor:pointer;-webkit-user-select:none;user-select:none;}
-.fac-head:active{background:var(--card2);}
-.fac-head-t{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.02em;}
-.fac-head-meta{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.fac-count{font-size:11px;font-weight:700;color:var(--t3);}
-.fac-count.done{color:var(--green);}
-.fac-caret{font-size:11px;color:var(--t3);transition:transform .2s;}
-.fac-sec.open .fac-caret{transform:rotate(180deg);}
-.fac-items{display:none;padding:2px 14px 12px;border-top:1px solid var(--border);}
-.fac-sec.open .fac-items{display:block;}
-.fac-item{margin-top:12px;}
-.fac-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.45;}
-.fac-hint{font-size:10px;font-weight:500;color:var(--t3);}
-.fac-input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;
-  color:var(--text);font-size:14px;font-family:inherit;padding:9px 10px;outline:none;}
-.fac-input:focus{border-color:var(--blue);}
-.fac-input::placeholder{color:var(--t3);}
 /* 入力支援 */
 .chk-tools{display:flex;gap:8px;padding:0 14px 4px;flex-wrap:wrap;}
 .tool-btn{flex:none;padding:7px 12px;border-radius:99px;border:1px solid var(--border);
@@ -289,11 +267,6 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 .fac-ex{margin-top:6px;font-size:11px;color:var(--t3);cursor:pointer;line-height:1.5;
   -webkit-user-select:none;user-select:none;}
 .fac-ex:active{color:var(--blue);}
-/* 工場情報 閲覧モード */
-.fv-row{padding:9px 0;border-bottom:1px solid var(--border);}
-.fv-row:last-child{border-bottom:none;}
-.fv-l{font-size:10px;font-weight:700;color:var(--t3);margin-bottom:3px;line-height:1.4;}
-.fv-v{font-size:14px;line-height:1.55;word-break:break-word;}
 /* NGコメント未記入ヒント */
 .ci.ng .ci-cmt:placeholder-shown{border-left:2px solid rgba(240,82,82,.55);padding-left:8px;border-radius:2px;}
 /* スワイプ入力 */
@@ -589,17 +562,6 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
   <div id="ok-body"></div>
 </div>
 
-<div class="screen" id="sc-fac">
-  <div class="ng-hdr">
-    <h2>🏭 工場情報</h2>
-    <button class="ng-exp fac-exp" onclick="exportFactory()">📥 Excel出力</button>
-  </div>
-  <div class="fac-tools">
-    <button class="tool-btn" id="fac-view-btn" onclick="toggleFacView()">👁 閲覧モード</button>
-    <button class="tool-btn" id="flt-unfilled" onclick="toggleFacFilter()">未入力のみ表示</button>
-  </div>
-  <div id="fac-body"></div>
-</div>
 
 <div class="screen" id="sc-info">
   <div class="info-body">
@@ -717,11 +679,6 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
       </svg>
       <div class="bnav-badge ok-badge" id="ok-badge">0</div>
     </div>OK一覧
-  </div>
-  <div class="bnav-item" id="bn-fac" onclick="switchTab('fac')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
-      <path d="M3 21h18M4 21V11l6 4V11l6 4V7l4 2v12"/><path d="M4 11V6h3v3"/>
-    </svg>工場情報
   </div>
   <div class="bnav-item" id="bn-info" onclick="switchTab('info')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -851,7 +808,7 @@ body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP','Helvetica Neue',s
 <div class="toast" id="toast"><span id="ti">✅</span><span id="tm"></span></div>
 
 <script>
-const APP_VERSION = 'v1.6.0 (2026-06-25)';
+const APP_VERSION = 'v1.7.0 (2026-06-25)';
 const BASE=[
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.1',q:'製品に使用しているコア材、メーカー名　型番'},
   {proc:'工程A',pn:'基板前工程',sub:'基材（コア材・PP）',cp:'メーカー・型番',no:'1.2',q:'製品に使用しているＰＰ材、メーカー名　型番'},
@@ -1012,15 +969,12 @@ const BASE=[
 
 const ICONS={工程A:'🧱',工程B:'🔩',工程C:'⚗️',工程D:'🎞️',工程E:'💧',工程F:'⚡',工程G:'🏗️',工程H:'🖨️',工程I:'✏️',工程J:'✂️',工程K:'🔬',全工程:'📊'};
 
-// ── 工場情報（APEX Factory information）記入項目 ──
-const FACTORY_ITEMS=[{"id":"fname","cat":"基本情報","label":"Company name（会社名）","hint":"","ex":"○○電子"},{"id":"fdate","cat":"基本情報","label":"Date（記入日）","hint":"","ex":"2025-06-30"},{"id":"f1","cat":"Company info","label":"Employee","hint":"○○persons","ex":"1000人"},{"id":"f2","cat":"Company info","label":"Production capacity","hint":"○○m2/month","ex":"20万m2/月"},{"id":"f3","cat":"Company info","label":"Product application","hint":"○○40%：■■30%：▲▲20％：Other 10％","ex":"車載40%：通信30%：民生20％：他10％"},{"id":"f4","cat":"Company info","label":"Main customer","hint":"5 Main customer","ex":"SONY、Canon、A社、B社、D社"},{"id":"f5","cat":"Company info","label":"Main supplyer","hint":"FR-4　Normal　  　 Tg＜150℃(TMA)","ex":"Nanya、生益、TUC"},{"id":"f6","cat":"Company info","label":"FR-4 High Tg　　　　Tg>150℃(TMA)","hint":"","ex":"Nanya、生益、TUC"},{"id":"f7","cat":"Company info","label":"Low dielectric material","hint":"","ex":"EMC、TUC"},{"id":"f8","cat":"Company info","label":"Aluminum Material","hint":"","ex":"華正"},{"id":"f9","cat":"Company info","label":"Certification","hint":"ISO9001/ISO14001 /IATF16949","ex":"ISO9001/ISO14001 /IATF16949"},{"id":"f10","cat":"Company info","label":"UL#","hint":"","ex":"E******"},{"id":"f11","cat":"Production information","label":"Maximum penetration_layer composition","hint":"","ex":"12"},{"id":"f12","cat":"Production information","label":"Max HDI_Layer configuration","hint":"","ex":"3+8+3　／ 10層Any layer"},{"id":"f13","cat":"Production information","label":"Subtractive pattern formation method","hint":"Printing method, tenting method, solder stripping method","ex":"テンティング法"},{"id":"f14","cat":"Production information","label":"Semi-additive pattern formation method","hint":"MSAP,SAP","ex":"MSAP"},{"id":"f15","cat":"Production information","label":"Max WPNL Size","hint":"X ｘ Y mm","ex":"500 ｘ 600 mm"},{"id":"f16","cat":"Production information","label":"Max PNL Size","hint":"X ｘ Y mm","ex":"120 ｘ 120 mm"},{"id":"f17","cat":"Production information","label":"Lamination size","hint":"定尺 or WPNLサイズ","ex":"定尺サイズ"},{"id":"f18","cat":"Thickness","label":"Thicknessof PCB","hint":"Min～Max","ex":"0.2～2.5mm"},{"id":"f19","cat":"Thickness","label":"Min core thickness","hint":"Minimum core + copper foil/copper foil um","ex":"50um+12/12um"},{"id":"f20","cat":"Thickness","label":"Minimum PP Thickness","hint":"","ex":"40um"},{"id":"f21","cat":"Thickness","label":"Inner layer copper foil thickness","hint":"Min-Max oz","ex":"1～3oz"},{"id":"f22","cat":"Thickness","label":"Outer layer copper thickness (including copper plating)","hint":"Min-Max oz","ex":"1/2～2oz"},{"id":"f23","cat":"NC drilling","label":"Machine maker Quantity (spindle rotation speed）","hint":"〇〇x□ Pcs（     rpm） ▲▲x■ Pcs（     rpm）","ex":"HITACHIx50台（200Krpm） Schmollx30台（160Krpm）"},{"id":"f24","cat":"NC drilling","label":"drill bit manufacturers","hint":"","ex":"Union tool"},{"id":"f25","cat":"NC drilling","label":"How to resharpen","hint":"","ex":"外注研磨"},{"id":"f26","cat":"NC drilling","label":"Min TH drill diameter","hint":"drill bit diameter","ex":"φ0.15mm"},{"id":"f27","cat":"NC drilling","label":"Min TH land diameter","hint":"Min drill diameter","ex":"φ0.4mm @ 0.15mm"},{"id":"f28","cat":"NC drilling","label":"Min TH interval","hint":"between the hole walls","ex":"0.35mm"},{"id":"f29","cat":"NC drilling","label":"TH shift","hint":"@＞Cpk1.33","ex":"±0.05mm"},{"id":"f30","cat":"NC drilling","label":"aspect ratio","hint":"","ex":"8:1"},{"id":"f31","cat":"Laser drilling","label":"Machine maker Quantity（P/N）","hint":"〇〇x□ unit (model number) unit","ex":"HITACHIx5台（LUC-2K） 三菱x10台（GTW6）"},{"id":"f32","cat":"Laser drilling","label":"Min laser via diameter","hint":"","ex":"75um"},{"id":"f33","cat":"Laser drilling","label":"Minimum laser via land diameter","hint":"Minimum laser Via diameter","ex":"0.2mm"},{"id":"f34","cat":"Laser drilling","label":"Minimum Laser Via Target Land Diameter","hint":"","ex":"0.25mm"},{"id":"f35","cat":"Laser drilling","label":"Minimum Laser Via Spacing","hint":"Via walls","ex":"0.2mm"},{"id":"f36","cat":"Laser drilling","label":"Stack Via","hint":"","ex":"可 available"},{"id":"f37","cat":"Laser drilling","label":"Laser Via BOTTOM size/TOP size","hint":">●●%","ex":"80％以上"},{"id":"f38","cat":"Laser drilling","label":"Laser Via accuracy","hint":"","ex":"±25um"},{"id":"f39","cat":"Laser drilling","label":"Max aspect ratio","hint":"","ex":"0.75:1"},{"id":"f40","cat":"Desmear","label":"Machine type：Weight loss","hint":"Horizontal　　　○ライン","ex":"1ライン PTH一貫ライン：0.25-0.35mg/cm²"},{"id":"f41","cat":"Desmear","label":"Batch　●ライン","hint":"","ex":"1ライン：0.25-0.35mg/cm²"},{"id":"f42","cat":"Desmear","label":"Plasma　△台","hint":"","ex":"2台：0.15－0.35g＠テスト板"},{"id":"f43","cat":"electroless copper","label":"Chemical vendor","hint":"","ex":"0.35mm"},{"id":"f44","cat":"electroless copper","label":"Auto doze（Auto or Manual）","hint":"Auto chemical analyzer","ex":"ほぼ自動、自動分析装置なし"},{"id":"f45","cat":"electroless copper","label":"E'less copper machine type","hint":"Horizontal　　　○ライン","ex":"2ライン　デスミア/PTH一貫ライン"},{"id":"f46","cat":"electroless copper","label":"VCP　　　△ライン","hint":"","ex":"1ライン"},{"id":"f47","cat":"electroless copper","label":"Batch　●ライン","hint":"","ex":"2ライン"},{"id":"f48","cat":"electroless copper","label":"Production restart dummy board rule","hint":"Qty、Dummy board type, Replace frequency","ex":"20枚、専用銅張り板（穴あり） 基材が見えたら交換"},{"id":"f49","cat":"electrolytic copper plating","label":"chemical manufacturer","hint":"","ex":"0.35mm"},{"id":"f50","cat":"electrolytic copper plating","label":"Types of plating lines and thickness accuracy","hint":"VCP　　　○Line（±□um）","ex":"2ライン（±3um)"},{"id":"f51","cat":"electrolytic copper plating","label":"Batch type　●Line（±■um）","hint":"","ex":"2ライン（±7um)"},{"id":"f52","cat":"electrolytic copper plating","label":"Fill via　●ライン","hint":"","ex":"2ライン（±7um)"},{"id":"f53","cat":"electrolytic copper plating","label":"Fill via method","hint":"Fill via or TH + Fill via","ex":"断面観察/1WPNL/ロット"},{"id":"f54","cat":"electrolytic copper plating","label":"With or without pulse plating","hint":"","ex":"0.2mm"},{"id":"f55","cat":"BGA","label":"Minimum BGA pitch","hint":"distance between centers","ex":"0.35mm"},{"id":"f56","cat":"BGA","label":"Minimum BGA pad size","hint":"","ex":"0.2mm"},{"id":"f57","cat":"Manufacturing limit fine wiring","label":"Presence or absence of LDI exposure equipment","hint":"","ex":"有り"},{"id":"f58","cat":"Manufacturing limit fine wiring","label":"LDI equipment manufacturer","hint":"If you have LED exposure equipment","ex":"60/60 × 40um"},{"id":"f59","cat":"Manufacturing limit fine wiring","label":"Penetration_Subtractive","hint":"Minimum L/S × Copper thickness (including copper plating)","ex":"60/60 × 40um"},{"id":"f60","cat":"Manufacturing limit fine wiring","label":"Penetration_Semi-additive","hint":"Minimum L/S × Copper thickness","ex":"45/45 × 12um(M-SAP）"},{"id":"f61","cat":"Manufacturing limit fine wiring","label":"HDI_Subtractive","hint":"Minimum L/S × Copper thickness (including copper plating)","ex":"50/50 x  23um"},{"id":"f62","cat":"Manufacturing limit fine wiring","label":"HDI_Semi-additive","hint":"Minimum L/S × Copper thickness","ex":"実績なし"},{"id":"f63","cat":"Manufacturing limit fine wiring","label":"dry film maker","hint":"","ex":"Dupon、Eternal"},{"id":"f64","cat":"Manufacturing limit fine wiring","label":"Presence or absence of vacuum etching line","hint":"","ex":"有り"},{"id":"f65","cat":"Manufacturing limit fine wiring","label":"Presence or absence of two-fluid etching line","hint":"","ex":"無し"},{"id":"f66","cat":"Inner","label":"Pretreatment roughening method","hint":"","ex":"ソフトエッチング"},{"id":"f67","cat":"Inner","label":"LDI machine type Qty","hint":"Vendor ○ライン（合計□台）","ex":"●● 2ライン（合計4台）"},{"id":"f68","cat":"Inner","label":"Semiauto exposure machine","hint":"●台","ex":"5台"},{"id":"f69","cat":"Inner","label":"Liquid or Dryfilm","hint":"Dryfilm vendor","ex":"Dupon、Eternal"},{"id":"f70","cat":"Inner","label":"Vacuum etching line","hint":"","ex":"有り"},{"id":"f71","cat":"Inner","label":"Two fluid etching line","hint":"","ex":"無し"},{"id":"f72","cat":"Outer","label":"Pretreatment roughening method","hint":"","ex":"ソフトエッチング"},{"id":"f73","cat":"Outer","label":"LDI machine type Qty","hint":"メーカー名 ○ライン（合計□台）","ex":"●● 2ライン（合計4台）"},{"id":"f74","cat":"Outer","label":"Semiauto exposure machine","hint":"●台","ex":"5台"},{"id":"f75","cat":"Outer","label":"Liquid or Dryfilm","hint":"Dryfilm vendor","ex":"Dupon、Eternal"},{"id":"f76","cat":"Outer","label":"Vacuum etching line","hint":"","ex":"有り"},{"id":"f77","cat":"Outer","label":"Two fluid etching line","hint":"","ex":"無し"},{"id":"f78","cat":"Solder resist processing","label":"Roughening treatment method for SR pretreatment","hint":"","ex":"ブラシ＋パーミス／ブラシ＋化学処理"},{"id":"f79","cat":"Solder resist processing","label":"Coating method","hint":"Screen/Spray/Roller","ex":"スクリーン印刷とスプレーコーター"},{"id":"f80","cat":"Solder resist processing","label":"Presence of SR film","hint":"","ex":"無し"},{"id":"f81","cat":"Solder resist processing","label":"Presence of DI exposure device","hint":"","ex":"無し"},{"id":"f82","cat":"Solder resist processing","label":"Semi auto machine qty","hint":"●台","ex":"5台"},{"id":"f83","cat":"Solder resist processing","label":"DI Machine maker Quantity","hint":"Maker name Number of line （Total      pcs ）","ex":"●● 2ライン（合計4台）"},{"id":"f84","cat":"Solder resist processing","label":"Maker name Number of line （Total      pcs ）","hint":"","ex":"●● 0ライン（合計2台）"},{"id":"f85","cat":"Solder resist processing","label":"SR deviation tolerance","hint":"","ex":"±0.05mm"},{"id":"f86","cat":"Solder resist processing","label":"SR opening tolerance","hint":"","ex":"±0.025mm"},{"id":"f87","cat":"Solder resist processing","label":"Minimum SR aperture size","hint":"","ex":"0.050mm"},{"id":"f88","cat":"Solder resist processing","label":"Minimum SR dam width","hint":"","ex":"0.1mm"},{"id":"f89","cat":"Solder resist processing","label":"Min Text width","hint":"","ex":"0.15mm"},{"id":"f90","cat":"Solder resist processing","label":"Undercut control","hint":"If yes, Max value","ex":"25um"},{"id":"f91","cat":"Solder resist processing","label":"SR material used","hint":"Customer/manufacturer name/product number","ex":"SONY・太陽・PSR-2000 SP200HF"},{"id":"f92","cat":"Solder resist processing","label":"Customer/manufacturer name/product number","hint":"","ex":"Canon・炎墨・SR-500 HG56"},{"id":"f93","cat":"Silk printing","label":"Possibility of inkjet printing","hint":"Please write the purpose of use in the notes column.","ex":"可 available"},{"id":"f94","cat":"Silk printing","label":"Printing method","hint":"Inkjet/Screen","ex":"インクジェット、スクリーン"},{"id":"f95","cat":"Silk printing","label":"Accuracy","hint":"","ex":"±0.05mm"},{"id":"f96","cat":"Silk printing","label":"Silk ink material","hint":"Manufacturer name/product number","ex":"●●・■"},{"id":"f97","cat":"Silk printing","label":"Manufacturer name/product number","hint":"","ex":"黒・○○・□"},{"id":"f98","cat":"Silk printing","label":"Min text width","hint":"","ex":"0.1mm"},{"id":"f99","cat":"External shape processing","label":"Router processing accuracy","hint":"","ex":"±0.1mm"},{"id":"f100","cat":"External shape processing","label":"With or without mold punch","hint":"","ex":"無し"},{"id":"f101","cat":"External shape processing","label":"Half PTH","hint":"If yes, method","ex":"可、半田剥離法で対応"},{"id":"f102","cat":"Surface treatment","label":"OSP availability","hint":"","ex":"可 available"},{"id":"f103","cat":"Surface treatment","label":"┗OSP maker and material name","hint":"","ex":"Entek Plus HT"},{"id":"f104","cat":"Surface treatment","label":"OSP solderbility assurance period","hint":"","ex":"6か月"},{"id":"f105","cat":"Surface treatment","label":"Possibility of producing electroless Ni/Au plating","hint":"","ex":"可 available"},{"id":"f106","cat":"Surface treatment","label":"ENIG solderbility assurance period","hint":"","ex":"1年"},{"id":"f107","cat":"Surface treatment","label":"Possibility of manufacturing electrolytic Au plating (hard)","hint":"Purity 99.9%","ex":"不可 not available"},{"id":"f108","cat":"Surface treatment","label":"Possibility of manufacturing electrolytic Au plating (soft)","hint":"Purity 99.9%","ex":"不可 not available"},{"id":"f109","cat":"Surface treatment","label":"Electroless NiPdAu plating manufacturing availability","hint":"","ex":"可 available"},{"id":"f110","cat":"Surface treatment","label":"Electroless Sn plating manufacturing availability","hint":"","ex":"可 available"},{"id":"f111","cat":"Surface treatment","label":"Other special plating","hint":"","ex":"無電解Agメッキ、カーボン印刷"},{"id":"f112","cat":"Quality check","label":"Cleanliness of the room during the exposure process","hint":"inner layer circuit","ex":"クラス　1000"},{"id":"f113","cat":"Quality check","label":"outer layer circuit","hint":"","ex":"クラス　1000"},{"id":"f114","cat":"Quality check","label":"solder resist","hint":"","ex":"クラス　10,000"},{"id":"f115","cat":"Quality check","label":"Other cleanliness","hint":"layup","ex":"クラス　100"},{"id":"f116","cat":"Quality check","label":"Visual inspection","hint":"","ex":"クラス　10万"},{"id":"f117","cat":"Quality check","label":"Inner layer circuit inspection","hint":"Inspection method","ex":"AOI"},{"id":"f118","cat":"Quality check","label":"AOI scan method","hint":"","ex":"インライン"},{"id":"f119","cat":"Quality check","label":"frequency","hint":"","ex":"全数 Full inspection"},{"id":"f120","cat":"Quality check","label":"Unit for sampling","hint":"","ex":"パネル"},{"id":"f121","cat":"Quality check","label":"AOI Resolution（Min detectability)","hint":"","ex":"20um"},{"id":"f122","cat":"Quality check","label":"Verify hold time","hint":"","ex":"0.5秒"},{"id":"f123","cat":"Quality check","label":"Verify magnification","hint":"","ex":"50倍"},{"id":"f124","cat":"Quality check","label":"Outer layer circuit inspection","hint":"Inspection method","ex":"目視 Visual check only"},{"id":"f125","cat":"Quality check","label":"AOI scan method","hint":"","ex":"インライン"},{"id":"f126","cat":"Quality check","label":"frequency","hint":"","ex":"抜き取り Random inspection"},{"id":"f127","cat":"Quality check","label":"Unit for sampling","hint":"","ex":"パネル"},{"id":"f128","cat":"Quality check","label":"AOI Resolution（Min detectability)","hint":"","ex":"20um"},{"id":"f129","cat":"Quality check","label":"Verify hold time","hint":"","ex":"0.5秒"},{"id":"f130","cat":"Quality check","label":"Verify magnification","hint":"","ex":"50倍"},{"id":"f131","cat":"Quality check","label":"Electroless copper","hint":"Backlight inspection frequency","ex":"毎ロット"},{"id":"f132","cat":"Quality check","label":"Eletrolyic copper","hint":"Eletrolyic copper inspection、Freaquency","ex":"CMI厚み測定：5点/面/5WPNL/ロット 断面観察：1WPNL/ロット"},{"id":"f133","cat":"Quality check","label":"Hole shift inspection method after drilling","hint":"Inspection method, Freaquency, Hole checker, X-Ray inspection","ex":"ホールチェッカー：最下基板＊全軸 X線検査：最上基板＊全軸 フィルム検査：最下＊全軸"},{"id":"f134","cat":"Quality check","label":"Laser via inspection","hint":"Inspection method","ex":"目視 Visual check only"},{"id":"f135","cat":"Quality check","label":"Sampling frequency","hint":"","ex":"0.1"},{"id":"f136","cat":"Quality check","label":"Process flow before/after inspection","hint":"","ex":"ﾚｰｻﾞｰﾄﾞﾘﾙ→ﾌﾟﾗｽﾞﾏ→Hole AOI→ﾃﾞｽﾐｱ/PTH"},{"id":"f137","cat":"Quality check","label":"Solder resist","hint":"Inpsection method","ex":"パネル"},{"id":"f138","cat":"Quality check","label":"Frequency","hint":"","ex":"0.1"},{"id":"f139","cat":"Quality check","label":"Warpage inspection","hint":"Inspection method","ex":"目視 Visual check only"},{"id":"f140","cat":"Quality check","label":"frequency","hint":"","ex":"抜き取り Random inspection"},{"id":"f141","cat":"Quality check","label":"Unit for sampling","hint":"","ex":"パネル"},{"id":"f142","cat":"Quality check","label":"impedance control","hint":"control tolerance","ex":"±10％"},{"id":"f143","cat":"Quality check","label":"F-test","hint":"2wire fixture machine qty","ex":"10台"},{"id":"f144","cat":"Quality check","label":"2wire flying probe machine qty","hint":"","ex":"5台"},{"id":"f145","cat":"Quality check","label":"4wire fixture machine qty","hint":"","ex":"3台"},{"id":"f146","cat":"Quality check","label":"4wire flying probe machine qty","hint":"","ex":"1台"},{"id":"f147","cat":"Quality check","label":"FQC","hint":"AVI vendor MC Type/Resolution/Qty","ex":"白井 VISPER710SLZ /25um/ 5台"},{"id":"f148","cat":"Quality check","label":"AVI vendor MC Type/Resolution/Qty","hint":"","ex":"Machvision AF16-3045-10-A/20um / 3台"},{"id":"f149","cat":"Packing","label":"General packing method","hint":"","ex":"プチプチ"},{"id":"f150","cat":"Packing","label":"Other packing method capability","hint":"","ex":"PEパック、アルミパック"},{"id":"f151","cat":"Other technology","label":"Coreless","hint":"","ex":"可 available"},{"id":"f152","cat":"Other technology","label":"plasma desmear treatment","hint":"","ex":"不可 not available"},{"id":"f153","cat":"Other technology","label":"back drill","hint":"","ex":"不可 not available"},{"id":"f154","cat":"Other technology","label":"Possibility of reflow screening (confirm via disconnection before shipping)","hint":"","ex":"可 available"},{"id":"f155","cat":"Other technology","label":"Can QR printing be supported?","hint":"","ex":"可 available"}];
 
 // ── STATE ──
 let items = JSON.parse(JSON.stringify(BASE));
 const S   = {};   // no -> {r, c}
 const meta = {maker:'',target:'',date:new Date().toISOString().slice(0,10),auditor:'',comment:''};
 let customCnt = 0;
-const factory = {};   // 工場情報 id -> 入力値
 
 // ── DATA HELPERS ──
 // HTML特殊文字をエスケープ（コメントや追加項目に < & " 等が入っても表示が壊れないように）
@@ -1599,7 +1553,7 @@ function wizSwipeInit(){
 }
 
 // ══ タブのスワイプ移動（カード・ドラム・モーダル以外の余白を横スワイプ） ══
-const TAB_ORDER = ['check','ng','ok','fac','info'];
+const TAB_ORDER = ['check','ng','ok','info'];
 function tabSwipeInit(){
   let ts = null;
   document.addEventListener('touchstart', e=>{
@@ -1725,7 +1679,6 @@ function switchTab(tab){
     dw.style.display = 'none';
     if(tab==='ng')   renderNG();
     if(tab==='ok')   renderOK();
-    if(tab==='fac')  renderFactory();
     if(tab==='info') renderInfo();
   }
 }
@@ -1879,137 +1832,6 @@ function renderOK(){
   ).join('');
 }
 
-// ══ 工場情報 ══
-const facOpen = new Set();   // 開いている大項目
-let facUnfilledOnly = false;
-
-function setFac(id, v){
-  factory[id] = v;
-  const exl = document.getElementById('facex-'+id);
-  if(exl) exl.style.display = v.trim() ? 'none' : '';
-  scheduleAutoSave();
-}
-function toggleFac(idx){
-  const sec = document.getElementById('facsec-'+idx);
-  if(!sec) return;
-  const cat = sec.dataset.cat;
-  if(sec.classList.toggle('open')) facOpen.add(cat); else facOpen.delete(cat);
-}
-function toggleFacFilter(){
-  facUnfilledOnly = !facUnfilledOnly;
-  document.getElementById('flt-unfilled').classList.toggle('on', facUnfilledOnly);
-  renderFactory();
-}
-let facViewMode = false;
-function toggleFacView(){
-  facViewMode = !facViewMode;
-  document.getElementById('fac-view-btn').classList.toggle('on', facViewMode);
-  // 閲覧モード中は「未入力のみ」ボタンを無効化表示
-  document.getElementById('flt-unfilled').style.display = facViewMode ? 'none' : '';
-  renderFactory();
-}
-/* 入力済みの項目だけを読みやすく一覧表示 */
-function renderFactoryView(body){
-  const groups = {};
-  FACTORY_ITEMS.forEach(it=>{
-    const v = (factory[it.id]||'').trim();
-    if(!v) return;
-    (groups[it.cat] = groups[it.cat]||[]).push({it, v});
-  });
-  const cats = Object.entries(groups);
-  if(!cats.length){
-    body.innerHTML = '<div class="ng-empty"><div class="ng-eic">📋</div>まだ入力された工場情報がありません<br>閲覧モードを解除して入力してください</div>';
-    return;
-  }
-  body.innerHTML = cats.map(([cat,rows])=>`
-    <div class="fac-sec open">
-      <div class="fac-head" style="cursor:default">
-        <span class="fac-head-t">${esc(cat)}</span>
-        <span class="fac-head-meta"><span class="fac-count done">${rows.length}件</span></span>
-      </div>
-      <div class="fac-items" style="display:block;padding-bottom:4px">
-        ${rows.map(({it,v})=>`
-          <div class="fv-row">
-            <div class="fv-l">${esc(it.label)}${it.hint?`　<span style="font-weight:500">${esc(it.hint)}</span>`:''}</div>
-            <div class="fv-v">${esc(v)}</div>
-          </div>`).join('')}
-      </div>
-    </div>`).join('');
-}
-/* 可/不可・有り/無し系はワンタップ選択肢を出す */
-function facChoices(it){
-  const ex = (it.ex||'').trim();
-  if(/可 available|不可 not available/.test(ex)) return ['可','不可'];
-  if(ex==='有り'||ex==='無し') return ['有り','無し'];
-  return null;
-}
-function setFacChip(id, v){
-  factory[id] = v;
-  const inp = document.getElementById('fac-'+id);
-  if(inp) inp.value = v;
-  document.querySelectorAll(`[data-chip="${id}"]`).forEach(b=>b.classList.toggle('sel', b.textContent===v));
-  scheduleAutoSave();
-}
-/* 記入例をタップでそのまま入力 */
-function useFacEx(id){
-  const it = FACTORY_ITEMS.find(x=>x.id===id); if(!it) return;
-  factory[id] = it.ex;
-  const inp = document.getElementById('fac-'+id);
-  if(inp){ inp.value = it.ex; inp.focus(); }
-  const exl = document.getElementById('facex-'+id);
-  if(exl) exl.style.display = 'none';
-  scheduleAutoSave();
-}
-function renderFactory(){
-  const body = document.getElementById('fac-body');
-  if(!body) return;
-  if(facViewMode){ renderFactoryView(body); return; }
-  const groups = {};
-  FACTORY_ITEMS.forEach(it=>{ (groups[it.cat] = groups[it.cat]||[]).push(it); });
-  const out = Object.entries(groups).map(([cat,arr],idx)=>{
-    const filled = arr.filter(it=>(factory[it.id]||'').trim()).length;
-    const shown = facUnfilledOnly ? arr.filter(it=>!(factory[it.id]||'').trim()) : arr;
-    if(!shown.length) return '';   // フィルタ中、全入力済みの大項目は隠す
-    const openCls = facOpen.has(cat) ? ' open' : '';
-    const doneCls = filled===arr.length ? ' done' : '';
-    return `<div class="fac-sec${openCls}" id="facsec-${idx}" data-cat="${esc(cat)}">
-      <div class="fac-head" onclick="toggleFac(${idx})">
-        <span class="fac-head-t">${esc(cat)}</span>
-        <span class="fac-head-meta">
-          <span class="fac-count${doneCls}">${filled}/${arr.length}</span>
-          <span class="fac-caret">▾</span>
-        </span>
-      </div>
-      <div class="fac-items">
-        ${shown.map(it=>{
-          const val = factory[it.id]||'';
-          const ch  = facChoices(it);
-          return `<div class="fac-item">
-            <div class="fac-label">${esc(it.label)}${it.hint?` <span class="fac-hint">${esc(it.hint)}</span>`:''}</div>
-            ${ch?`<div class="fac-chips">${ch.map(c=>`<button class="fac-chip${val===c?' sel':''}" data-chip="${it.id}" onclick="setFacChip('${it.id}','${c}')">${c}</button>`).join('')}</div>`:''}
-            <input class="fac-input" id="fac-${it.id}" value="${esc(val)}"
-              placeholder="${ch?'（補足があれば入力）':'入力...'}" oninput="setFac('${it.id}',this.value)">
-            ${(!ch&&it.ex)?`<div class="fac-ex" id="facex-${it.id}"${val.trim()?' style="display:none"':''} onclick="useFacEx('${it.id}')">💡 例: ${esc(it.ex)}（タップで入力）</div>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }).join('');
-  body.innerHTML = out || `<div class="ng-empty"><div class="ng-eic">🎉</div>全て入力済みです</div>`;
-}
-function exportFactory(){
-  if(!xlsxReady()) return;
-  const wb = XLSX.utils.book_new();
-  const r = [['カテゴリ','項目','記入内容','記入ヒント','記入例']];
-  FACTORY_ITEMS.forEach(it=> r.push([it.cat, it.label, factory[it.id]||'', it.hint||'', it.ex||'']));
-  const ws = XLSX.utils.aoa_to_sheet(r);
-  ws['!cols'] = [{wch:24},{wch:40},{wch:42},{wch:34},{wch:30}];
-  XLSX.utils.book_append_sheet(wb, ws, '工場情報');
-  const name = safeName((factory['fname']||meta.target||meta.maker||'factory').toString().slice(0,20));
-  XLSX.writeFile(wb, `PCB工場情報_${name}.xlsx`);
-  toast('🏭','工場情報を出力しました');
-}
-
 // ══ ADD ══
 function openAddProc(){
   const sel = document.getElementById('ap-proc');
@@ -2135,11 +1957,6 @@ function exportAll(){
   const ws4=XLSX.utils.aoa_to_sheet(r4);
   ws4['!cols']=[{wch:10},{wch:22},{wch:8},{wch:6},{wch:6},{wch:6},{wch:8},{wch:10}];
   XLSX.utils.book_append_sheet(wb,ws4,'工程別サマリー');
-  const r5=[['カテゴリ','項目','記入内容','記入ヒント','記入例']];
-  FACTORY_ITEMS.forEach(it=>r5.push([it.cat,it.label,factory[it.id]||'',it.hint||'',it.ex||'']));
-  const ws5=XLSX.utils.aoa_to_sheet(r5);
-  ws5['!cols']=[{wch:24},{wch:40},{wch:42},{wch:34},{wch:30}];
-  XLSX.utils.book_append_sheet(wb,ws5,'工場情報');
   XLSX.writeFile(wb,`PCB監査_${safeName(meta.target||meta.maker||'report')}_${meta.date||'nodate'}.xlsx`);
   toast('📊','Excelをダウンロードしました');
 }
@@ -2479,7 +2296,7 @@ function idbListBackups(){ return idbListKeys('bak_'); }
 
 // ══ メーカーDB（訪問した基板メーカーの監査データを蓄積） ══
 function makerName(){
-  return (meta.target || factory['fname'] || meta.maker || '').trim();
+  return (meta.target || meta.maker || '').trim();
 }
 function makerSummary(){
   let ok=0,ng=0,na=0,ph=0;
@@ -2489,7 +2306,6 @@ function makerSummary(){
   return { name:makerName()||'名称未設定', date:meta.date||'', auditor:meta.auditor||'',
     total:items.length, ok, ng, na, photos:ph,
     score: judged?Math.round(ok/judged*100):null,
-    facFilled: FACTORY_ITEMS.filter(it=>(factory[it.id]||'').trim()).length,
     savedAt: new Date().toISOString() };
 }
 async function saveMakerDB(){
@@ -2539,7 +2355,7 @@ function renderMakerDB(){
     const scCol = sc===null?'var(--t3)': sc>=90?'var(--green)': sc>=70?'var(--amber)':'var(--red)';
     return `<div class="mdb-row">
       <div class="mdb-name">${esc(s.name)}</div>
-      <div class="mdb-meta">${esc(s.date||'日付未設定')}${s.auditor?('　監査員: '+esc(s.auditor)):''}　工場情報 ${s.facFilled||0}件</div>
+      <div class="mdb-meta">${esc(s.date||'日付未設定')}${s.auditor?('　監査員: '+esc(s.auditor)):''}</div>
       <div class="mdb-stats">
         <span style="color:var(--green)">✅ ${s.ok}</span>
         <span style="color:${s.ng>0?'var(--red)':'var(--t3)'}">❌ ${s.ng}</span>
@@ -2579,9 +2395,9 @@ function exportMakerDB(){
   if(!xlsxReady()) return;
   if(!mdbCache.length){ toast('ℹ️','登録がありません'); return; }
   const wb = XLSX.utils.book_new();
-  const r = [['会社名','監査日','監査員','総項目','OK','NG','N/A','スコア(OK率)','写真枚数','工場情報件数','登録日時']];
+  const r = [['会社名','監査日','監査員','総項目','OK','NG','N/A','スコア(OK率)','写真枚数','登録日時']];
   mdbCache.forEach(({summary:s})=>r.push([s.name,s.date,s.auditor,s.total,s.ok,s.ng,s.na,
-    (s.score!==null&&s.score!==undefined)?s.score+'点':'', s.photos, s.facFilled||0, (s.savedAt||'').slice(0,16).replace('T',' ')]));
+    (s.score!==null&&s.score!==undefined)?s.score+'点':'', s.photos, (s.savedAt||'').slice(0,16).replace('T',' ')]));
   const ws = XLSX.utils.aoa_to_sheet(r);
   ws['!cols']=[{wch:24},{wch:12},{wch:10},{wch:8},{wch:6},{wch:6},{wch:6},{wch:12},{wch:8},{wch:12},{wch:18}];
   XLSX.utils.book_append_sheet(wb, ws, 'メーカーDB');
@@ -2592,7 +2408,7 @@ function exportMakerDB(){
 // ══ 自動バックアップ（起動時に世代作成・最大5件保持） ══
 function makeBackup(){
   const d = buildSaveData();
-  const hasData = Object.keys(d.S).length || Object.keys(d.factory).length ||
+  const hasData = Object.keys(d.S).length ||
     d.customItems.length || d.meta.target || d.meta.maker || d.meta.auditor || d.meta.comment;
   if(!hasData) return Promise.resolve(false);
   return idbSet(d, 'bak_'+Date.now()).then(()=>pruneBackups()).catch(()=>{});
@@ -2646,7 +2462,6 @@ function buildSaveData(){
     savedAt : new Date().toISOString(),
     meta    : {...meta},
     S       : JSON.parse(JSON.stringify(S)),
-    factory : {...factory},
     customItems: items.filter(i=>i._custom),
     customCnt  : customCnt,
     dIdx       : dIdx,
@@ -2661,9 +2476,6 @@ function applySaveData(d){
   // results + photos
   Object.keys(S).forEach(k=>delete S[k]);
   Object.entries(d.S||{}).forEach(([k,v])=>{ S[k]=v; });
-  // 工場情報
-  Object.keys(factory).forEach(k=>delete factory[k]);
-  Object.assign(factory, d.factory||{});
   // custom items
   items = JSON.parse(JSON.stringify(BASE));
   (d.customItems||[]).forEach(ci=>items.push(ci));
@@ -2768,10 +2580,9 @@ function loadJSON(e){
 
 /* ── リセット確認 ── */
 function confirmClear(){
-  if(!confirm('全てのチェック結果・写真・コメント・工場情報を消去しますか？\nこの操作は元に戻せません。')) return;
+  if(!confirm('全てのチェック結果・写真・コメントを消去しますか？\nこの操作は元に戻せません。')) return;
   makeBackup();   // 消去前に念のためバックアップ
   Object.keys(S).forEach(k=>delete S[k]);
-  Object.keys(factory).forEach(k=>delete factory[k]);
   items = JSON.parse(JSON.stringify(BASE));
   customCnt = 0;
   dIdx = 0;
